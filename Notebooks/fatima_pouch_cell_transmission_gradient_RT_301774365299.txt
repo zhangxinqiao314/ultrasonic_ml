@@ -1,0 +1,1718 @@
+key: fileName type: <class 'str'>
+key: 0 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 1 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 2 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 3 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 4 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 5 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 6 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 7 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 8 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 9 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 10 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 11 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 12 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 13 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 14 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 15 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 16 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 17 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 18 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 19 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 20 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 21 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 22 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 23 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 24 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 25 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 26 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 27 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 28 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 29 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 30 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 31 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 32 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 33 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 34 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 35 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 36 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 37 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 38 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 39 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 40 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 41 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 42 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 43 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 44 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 45 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 46 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 47 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 48 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 49 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 50 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 51 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 52 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 53 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 54 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 55 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 56 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 57 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 58 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 59 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 60 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 61 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 62 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 63 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 64 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 65 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 66 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 67 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 68 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 69 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 70 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 71 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 72 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 73 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 74 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 75 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 76 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 77 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 78 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 79 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 80 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 81 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 82 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 83 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 84 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 85 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 86 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 87 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 88 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 89 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 90 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 91 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 92 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 93 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 94 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 95 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 96 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 97 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 98 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 99 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 100 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 101 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 102 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 103 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 104 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 105 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 106 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 107 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 108 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 109 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 110 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 111 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 112 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 113 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 114 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 115 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 116 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 117 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 118 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 119 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 120 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 121 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 122 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 123 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 124 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 125 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 126 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 127 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 128 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 129 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 130 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 131 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 132 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 133 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 134 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 135 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 136 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 137 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 138 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 139 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 140 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 141 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 142 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 143 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 144 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 145 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 146 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 147 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 148 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 149 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 150 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 151 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 152 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 153 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 154 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 155 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 156 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 157 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 158 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 159 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 160 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 161 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 162 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 163 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 164 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 165 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 166 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 167 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 168 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 169 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 170 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 171 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 172 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 173 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 174 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 175 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 176 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 177 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 178 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 179 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 180 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 181 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 182 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 183 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 184 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 185 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 186 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 187 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 188 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 189 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 190 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 191 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 192 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 193 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 194 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 195 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 196 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 197 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 198 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 199 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 200 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 201 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 202 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 203 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 204 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 205 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 206 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 207 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 208 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 209 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 210 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 211 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 212 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 213 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 214 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 215 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 216 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 217 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 218 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 219 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 220 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 221 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 222 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 223 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 224 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 225 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 226 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 227 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 228 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 229 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 230 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 231 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 232 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 233 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 234 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 235 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 236 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 237 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 238 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 239 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 240 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 241 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 242 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 243 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 244 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 245 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 246 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 247 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 248 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 249 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 250 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 251 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 252 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 253 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 254 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 255 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 256 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 257 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 258 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 259 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 260 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 261 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 262 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 263 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 264 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 265 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 266 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 267 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 268 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 269 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 270 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 271 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 272 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 273 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 274 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 275 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 276 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 277 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 278 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 279 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 280 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 281 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 282 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 283 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 284 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 285 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 286 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 287 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 288 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 289 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 290 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 291 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 292 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 293 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 294 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 295 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 296 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 297 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 298 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 299 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 300 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 301 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 302 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 303 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 304 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 305 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 306 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 307 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 308 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 309 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 310 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 311 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 312 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 313 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 314 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 315 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 316 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 317 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 318 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 319 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 320 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 321 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 322 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 323 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 324 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 325 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 326 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 327 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 328 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 329 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 330 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 331 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: 332 type: <class 'dict'>
+	key: voltage type: <class 'numpy.ndarray'>
+	key: time type: <class 'numpy.ndarray'>
+	key: time_collected type: <class 'float'>
+	key: collection_index type: <class 'float'>
+key: parameters type: <class 'dict'>
+	key: gui type: <class 'float'>
+	key: experiment type: <class 'str'>
+	key: axis type: <class 'str'>
+	key: distance type: <class 'float'>
+	key: transducerFrequency type: <class 'float'>
+	key: collectionMode type: <class 'str'>
+	key: pulserType type: <class 'str'>
+	key: measureTime type: <class 'float'>
+	key: measureDelay type: <class 'float'>
+	key: voltageRange type: <class 'float'>
+	key: autoRange type: <class 'str'>
+	key: autoRangeEcho type: <class 'str'>
+	key: waves type: <class 'float'>
+	key: samples type: <class 'float'>
+	key: halfCycles type: <class 'float'>
+	key: multiplexer type: <class 'str'>
+	key: collectionDirection type: <class 'str'>
+	key: voltageOffsetForward type: <class 'float'>
+	key: voltageOffsetReverse type: <class 'float'>
+	key: gainForward type: <class 'float'>
+	key: gainReverse type: <class 'float'>
+	key: picoModule type: <class 'float'>
+	key: pulseModule type: <class 'float'>
+	key: rfSwitch type: <class 'float'>
+	key: t0PulseSwitch type: <class 'float'>
+	key: t0ReceiveSwitch type: <class 'float'>
+	key: t1PulseSwitch type: <class 'float'>
+	key: t1ReceiveSwitch type: <class 'float'>
+	key: experimentFolder type: <class 'str'>
+	key: experimentName type: <class 'str'>
+	key: experimentBaseName type: <class 'str'>
+	key: saveFormat type: <class 'str'>
+	key: postAnalysis type: <class 'str'>
+	key: primaryAxis type: <class 'str'>
+	key: secondaryAxis type: <class 'str'>
+	key: primaryAxisRange type: <class 'float'>
+	key: primaryAxisStep type: <class 'float'>
+	key: secondaryAxisRange type: <class 'float'>
+	key: secondaryAxisStep type: <class 'float'>
+	key: scanInterval type: <class 'float'>
+	key: numberOfScans type: <class 'float'>
+	key: pulseInterval type: <class 'float'>
+	key: experimentTime type: <class 'float'>
+	key: sweepParams type: <class 'str'>
+	key: pulserPort type: <class 'str'>
+	key: scannerPort type: <class 'str'>
+	key: dllFile type: <class 'str'>
+	key: multiplexerPort type: <class 'str'>
+	key: transducerHolderHeight type: <class 'float'>
+	key: scannerMaxDimensions type: <class 'str'>
+	key: fileName type: <class 'str'>

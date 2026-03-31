@@ -8,6 +8,7 @@ import os
 from Gaussian_Sampler.utils import display_dict_tree
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
+
 class morlet_1D_dataset_real(torch.utils.data.Dataset):
     def __init__(self, sq3lite_path, dset_name, image_shape=[1,1], crops=None):
         '''
@@ -51,7 +52,7 @@ class morlet_1D_dataset_real(torch.utils.data.Dataset):
                 refFil = sosfiltfilt(sos, refUngained)             
                 self.data['processed_'+self.dset_name][i,c] = refFil.copy()
          
-        self.data['processed_'+self.dset_name] =self.data['processed_'+self.dset_name]/np.max(np.abs(self.data['processed_'+self.dset_name]))   
+        self.data['processed_'+self.dset_name] = self.data['processed_'+self.dset_name]/np.max(np.abs(self.data['processed_'+self.dset_name]))   
         self.preprocessed = True
 
     def __getitem__(self, idx):
