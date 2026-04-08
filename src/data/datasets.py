@@ -34,14 +34,18 @@ class morlet_1D_dataset_real(torch.utils.data.Dataset):
         self.preprocess_data()
         
         self.spec_len = self.data['processed_'+self.dset_name].shape[-1]
-        self.image_shape = image_shape
-        self.shape = (image_shape[0]*image_shape[1],self.spec_len)
+        self.shape = (len(self.numeric_keys),self.crop[1]-self.crop[0])
+        # self.min = np.min(self.data['processed_'+self.dset_name])
+        # self.max = np.max(self.data['processed_'+self.dset_name])
+        # self.mean = np.mean(self.data['processed_'+self.dset_name])
+        # self.std = np.std(self.data['processed_'+self.dset_name])
+        
         
     def preprocess_data(self):
         assert not self.preprocessed, 'Data has already been preprocessed'
         sos = butter(5, 1000000, btype = 'highpass', analog = False, fs = 500000000, output = 'sos')
-        self.data['processed_'+self.dset_name] = np.zeros((len(self.numeric_keys), 
-                                                                self.crop[1]-self.crop[0]))
+        self.data['processed_'+self.dset_name] = np.zeros((len(self.numeric_keys), self.crop[1]-self.crop[0]))
+        self.coords = np.zeros((len(self.numeric_keys), 2)).astype(int)
         for i in self.numeric_keys:
             # change signal to pre-amplification voltage
             refUngained = pj.correctVoltageByGain(self.data[i][self.dset_name][self.crop[0]:self.crop[1]], 
@@ -49,7 +53,9 @@ class morlet_1D_dataset_real(torch.utils.data.Dataset):
             # apply butterworth filter forward and reverse to pre-amplified signal
             refFil = sosfiltfilt(sos, refUngained)             
             self.data['processed_'+self.dset_name][i] = refFil.copy()
-        
+            self.coords[i] = np.array([abs(self.data[i]['Z']), abs(self.data[i]['X'])])
+            
+        self.image_shape = tuple(self.coords.max(axis=0).astype(int) + 1)
         self.data['processed_'+self.dset_name] = self.data['processed_'+self.dset_name]/np.max(np.abs(self.data['processed_'+self.dset_name]))   
         self.preprocessed = True
 
