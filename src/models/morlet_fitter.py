@@ -1,4 +1,7 @@
 import sys
+sys.path.append('/Users/xz498/Desktop/ultrasound project/data analysis/ultrasonic_ml/src')
+sys.path.append('/Users/xz498/Desktop/ultrasound project/data analysis/M3Learning-Util/src')
+sys.path.append('/Users/xz498/Desktop/ultrasound project/data analysis/AutoPhysLearn/src')
 import os
 
 from random import shuffle
@@ -21,7 +24,7 @@ import numpy as np
 import h5py
 
 class morlet_1D_fitters_real():
-    def __init__(self, limits=[1,1,975]):
+    def __init__(self, limits=[1,1,975], device='cpu'):
         self.limits = limits
     
     def scale_parameters(self, embedding):

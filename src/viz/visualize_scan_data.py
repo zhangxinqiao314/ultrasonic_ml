@@ -48,9 +48,7 @@ def plotly_viewer(dataset):
         step=1, 
         value=0
     )
-    
-    # Get number of crops
-    num_crops = len(dataset.crops)
+
     
     # Get initial data
     idx, processed_data = dataset[i_slider.value]
@@ -58,13 +56,12 @@ def plotly_viewer(dataset):
     # idx is the actual key value, need to find its position in numeric_keys
     
     # Create subplots - one per crop, stacked vertically
-    fig = make_subplots(
-        rows=num_crops, 
+    fig = make_subplots(rows=1, 
         cols=1,
-        subplot_titles=[f'Crop {c+1} [{dataset.crops[c][0]}:{dataset.crops[c][1]}]' for c in range(num_crops)],
+        subplot_titles=[f'Crop [{dataset.crop[0]}:{dataset.crop[1]}]'],
         vertical_spacing=0.15,  # Increased spacing to prevent overcrowding
         shared_xaxes=False,
-        row_heights=[1.0] * num_crops  # Equal heights for each subplot
+        row_heights=[1.0]  # Equal heights for each subplot
     )
     
     # Convert to FigureWidget for interactive updates
@@ -74,25 +71,7 @@ def plotly_viewer(dataset):
     full_time = dataset.data[idx]['time']
     
     # Add traces for each crop
-    for c, crop in enumerate(dataset.crops):
-        # Extract signal for this crop: processed_data[scan_idx_in_array, c, :]
-        crop_signal = processed_data[c, :]
-        
-        # Extract time for this crop
-        crop_time = full_time[crop[0]:crop[1]]
-        
-        # Add trace to the appropriate subplot (row c+1, col 1)
-        fig.add_trace(
-            go.Scatter(
-                x=crop_time, 
-                y=crop_signal,
-                mode='lines', 
-                name=f'Crop {c+1}',
-                line=dict(color=f'hsl({c*360/num_crops}, 70%, 50%)', width=1.5),
-                showlegend=False
-            ),
-            row=c+1, col=1
-        )
+    fig.add_trace(go.Scatter(x=full_time[dataset.crop[0]:dataset.crop[1]], y=processed_data, mode='lines', name='Voltage'))
     
     # Set up layout
     fig.update_layout(
@@ -101,29 +80,14 @@ def plotly_viewer(dataset):
             x=0.5,  # Center the title
             xanchor='center'
         ),
-        height=300 * num_crops,  # Increased height per subplot to prevent overcrowding
+        height=300,  # Increased height per subplot to prevent overcrowding
         template='plotly_white',
         hovermode='x unified',
-        margin=dict(l=80, r=50, t=80, b=60)  # Add margins to prevent edge crowding
+        margin=dict(l=80, r=50, t=80, b=60)
     )
     
-    # Update x-axis labels for all subplots
-    for c in range(num_crops):
-        fig.update_xaxes(
-            title_text='Time (samples or time units)', 
-            row=c+1, 
-            col=1,
-            title_standoff=15  # Add space between axis and title
-        )
-        fig.update_yaxes(
-            title_text='Voltage', 
-            row=c+1, 
-            col=1,
-            title_standoff=15  # Add space between axis and title
-        )
-    
     # Update function that gets called when slider changes
-    def update_plot(change):
+    def update_plot(change): 
         # Get new data based on slider value
         idx, processed_data = dataset[i_slider.value]
         
@@ -141,16 +105,8 @@ def plotly_viewer(dataset):
         
         # Update all subplots
         with fig.batch_update():
-            for c, crop in enumerate(dataset.crops):
-                # Extract signal for this crop: processed_data[scan_idx_in_array, c, :]
-                crop_signal = processed_data[scan_idx_in_array, c, :]
-                
-                # Extract time for this crop
-                crop_time = full_time[crop[0]:crop[1]]
-                
-                # Update the trace (trace index c corresponds to crop c)
-                fig.data[c].x = to_list(crop_time)
-                fig.data[c].y = to_list(crop_signal)
+            fig.data[0].x = to_list(full_time[dataset.crop[0]:dataset.crop[1]])
+            fig.data[0].y = to_list(processed_data)
             
             # Update title
             fig.layout.title.text = f'Scan {idx} - {dataset.dset_name}'
@@ -163,7 +119,7 @@ def plotly_viewer(dataset):
     return container
 
 
-def training_viewer(dset, fits, params, x=0, y=0, crop_idx=0):
+def training_viewer(dset, fits, params, idx=0, crop_idx=0):
     """
     Visualization for comparing original data with fitted Morlet packet components.
     
@@ -181,7 +137,7 @@ def training_viewer(dset, fits, params, x=0, y=0, crop_idx=0):
     """
     viridis = matplotlib.colormaps.get_cmap('viridis').resampled(fits.shape[1])
     
-    idx = y * dset.shape[0] + x
+    # idx = y * dset.shape[0] + x
     
     # Get original data - dset[idx] returns (idx, processed_data)
     # processed_data has shape (len(numeric_keys), len(crops), crop_length)
