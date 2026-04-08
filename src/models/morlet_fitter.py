@@ -26,14 +26,15 @@ import h5py
 class morlet_1D_fitters_real():
     def __init__(self, limits=[1,1,975], device='cpu'):
         self.limits = limits
+        self.omega = 4.5e-03# 2.25 MHz
     
     def scale_parameters(self, embedding):
         a = self.limits[0] * embedding[..., 0] # amplitude
         mu = self.limits[1] * embedding[..., 1] # mean
         sigma = self.limits[2] * embedding[..., 2] # standard deviation
-        omega = self.limits[3] * embedding[..., 3] # angular frequency
+        # omega = self.limits[3] * embedding[..., 3] # angular frequency
         
-        return torch.stack([a,mu,sigma,omega],axis=2)
+        return torch.stack([a,mu,sigma],axis=2)
 
     def apply_activations(self, embedding):
         '''This function takes an embedding and scales it to the limits of the parameters
@@ -52,9 +53,9 @@ class morlet_1D_fitters_real():
         a = nn.Tanh()(embedding[..., 0])/2 + 0.5 # amplitude
         mu = torch.clamp(nn.Tanh()(embedding[..., 1])/2 + 0.5, min=1e-10) # mean
         sigma = torch.clamp(nn.Tanh()(embedding[..., 2])/2 + 0.5, min=1e-10) # stdv
-        omega = torch.clamp(nn.Tanh()(embedding[..., 3])/2 + 0.5, min=1e-10) # angular frequency
+        # omega = torch.clamp(nn.Tanh()(embedding[..., 3])/2 + 0.5, min=1e-10) # angular frequency
         
-        return torch.stack([a,mu,sigma,omega],axis=2)
+        return torch.stack([a,mu,sigma],axis=2)
     
     def generate_fit(self, embedding, spec_len, **kwargs, ):
         '''Generate 1D Morlet profiles from embedding parameters.
@@ -77,14 +78,13 @@ class morlet_1D_fitters_real():
         a = embedding[..., 0].unsqueeze(-1)  # amplitude
         mu = embedding[..., 1].unsqueeze(-1)  # center frequency
         sigma = embedding[..., 2].unsqueeze(-1)  # standard deviation
-        omega = embedding[..., 3].unsqueeze(-1)  # angular frequency
-        
+        # omega = embedding[..., 3].unsqueeze(-1)  # angular frequency
         s = a.shape  # (_, num_fits)
-        
+
         t = torch.arange(spec_len, dtype=torch.float32).repeat(s[0],s[1],1).to(device)
-        
+
         # Calculate Morlet profile
-        morlet = a * torch.exp(-0.5 * ((t - mu) / sigma)**2) * torch.cos(2 * np.pi * omega * (t-mu))
+        morlet = a * torch.exp(-0.5 * ((t - mu) / sigma)**2) * torch.cos(2 * np.pi * self.omega * (t-mu))
         
         return morlet.to(torch.float32)
 
