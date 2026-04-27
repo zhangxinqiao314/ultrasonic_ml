@@ -8,6 +8,7 @@ import os
 from src.utils import display_dict_tree
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
+from tqdm import tqdm
 
 class morlet_1D_dataset_real(torch.utils.data.Dataset):
     def __init__(self, sq3lite_path, dset_name, image_shape=[1,1], crop=None):
@@ -21,7 +22,8 @@ class morlet_1D_dataset_real(torch.utils.data.Dataset):
         self.dataset_path= os.path.splitext(self.sq3lite_path)[0] + '.pickle'
         self.data = pj.loadPickle(self.dataset_path)
         self.numeric_keys = [k for k in self.data.keys() if not isinstance(k, str)]
-        self.dset_name = dset_name        
+        self.dset_name = dset_name     
+        self.dt = self.data['parameters']['measureTime']/ (self.data['parameters']['samples'] - 1)
         type_ = self.dset_name.split('_')[-1]
         if type_ == 'forward':
             self.gain_keys = 'gainForward'
@@ -43,10 +45,11 @@ class morlet_1D_dataset_real(torch.utils.data.Dataset):
         
     def preprocess_data(self):
         assert not self.preprocessed, 'Data has already been preprocessed'
+        print('preprocessing data...')
         sos = butter(5, 1000000, btype = 'highpass', analog = False, fs = 500000000, output = 'sos')
         self.data['processed_'+self.dset_name] = np.zeros((len(self.numeric_keys), self.crop[1]-self.crop[0]))
         self.coords = np.zeros((len(self.numeric_keys), 2)).astype(int)
-        for i in self.numeric_keys:
+        for i in tqdm(self.numeric_keys, leave=True, total=len(self.numeric_keys)):
             # change signal to pre-amplification voltage
             refUngained = pj.correctVoltageByGain(self.data[i][self.dset_name][self.crop[0]:self.crop[1]], 
                                                 self.data[i][self.gain_keys] / 10)
@@ -59,8 +62,13 @@ class morlet_1D_dataset_real(torch.utils.data.Dataset):
         self.data['processed_'+self.dset_name] = self.data['processed_'+self.dset_name]/np.max(np.abs(self.data['processed_'+self.dset_name]))   
         self.preprocessed = True
 
+    def preprocess_data_additional(self, func, additional_process_name, *func_args):
+        assert self.preprocessed, 'Data has not been preprocessed'
+        self.data['processed_'+self.dset_name+'_'+additional_process_name] = func(self.data['processed_'+self.dset_name], *func_args)
+        self.additional_process_name = '_'+additional_process_name
+
     def __getitem__(self, idx):
-        return idx, self.data[f'processed_{self.dset_name}'][idx]
+        return idx, self.data[f'processed_{self.dset_name}'+self.additional_process_name][idx]
     
     def __len__(self):
         return len(self.numeric_keys)

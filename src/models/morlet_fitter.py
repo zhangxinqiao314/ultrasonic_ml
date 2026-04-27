@@ -26,13 +26,13 @@ import h5py
 class morlet_1D_fitters_real():
     def __init__(self, limits=[1,1,975], device='cpu'):
         self.limits = limits
-        self.omega = 4.5e-03# 2.25 MHz
+        self.omega = 4.5e-03# 2.25 MHz # TODO: make this an init parameter
     
     def scale_parameters(self, embedding):
         a = self.limits[0] * embedding[..., 0] # amplitude
         mu = self.limits[1] * embedding[..., 1] # mean
         sigma = self.limits[2] * embedding[..., 2] # standard deviation
-        omega = self.limits[3] * embedding[..., 3] # angular frequency
+        omega = (self.limits[3] * embedding[..., 3] + 1) * self.omega # +-1% of the angular frequency
         
         return torch.stack([a,mu,sigma,omega],axis=2)
 
@@ -45,15 +45,15 @@ class morlet_1D_fitters_real():
         Args:
             embedding (torch.Tensor): Tensor of shape (batch_size, num_fits, 4) containing:
                 - A: Area under curve (index 0)
-                - x: Mean position (index 1)
+             - x: Mean position (index 1)
                 - w: Full Width at Half Maximum (FWHM) (index 2)
                 - nu: Lorentzian character fraction (index 3)
             limits (list): Scale factors for [A, x, w]. Defaults to [1, 1, 975]
         '''
-        a = torch.clamp(nn.Tanh()(embedding[..., 0])/2 + 0.5, min=0.5) # amplitude
-        mu = torch.clamp(nn.Tanh()(embedding[..., 1])/2 + 0.5, min=1e-10) # mean
-        sigma = torch.clamp(nn.Tanh()(embedding[..., 2])/2 + 0.5, min=0.5) # stdv
-        omega = nn.Tanh()(embedding[..., 3]) + self.omega # +-1% of the angular frequency
+        a = nn.Tanh()(embedding[..., 0])/2 + 0.5 # amplitude [0,1]
+        mu = torch.clamp(nn.Tanh()(embedding[..., 1])/2 + 0.5, min=1e-10) # mean [1e-10,1]
+        sigma = torch.clamp(nn.Tanh()(embedding[..., 2])/2 + 0.5, min=0.1) # stdv [0.1,1]
+        omega = nn.Tanh()(embedding[..., 3]) # angular freq [-1,1]
         
         return torch.stack([a,mu,sigma,omega],axis=2)
     
@@ -67,18 +67,19 @@ class morlet_1D_fitters_real():
         compatible with cwt: exp(1j*w*x/s) * exp(-0.5*(x/s)**2) * pi**(-0.25) * sqrt(1/s)
 
         Args:
-            embedding (torch.Tensor): Tensor of shape (batch_size, num_fits, 3) containing:
+            embedding (torch.Tensor): Tensor of shape (batch_size, num_fits, 4) containing:
                 - a: Amplitude (index 0)
                 - mu: Center frequency (index 1)
                 - sigma: Standard deviation (index 2)
+                - omega: Angular frequency fraction deviation from 2.25 MHz (index 3)
             spec_len (int): Length of the spectrum
         '''
         device = embedding.device
-        # Unpack embedding tensor along last dimension (shape: [..., 3])
+        # Unpack embedding tensor along last dimension (shape: [..., 4])
         a = embedding[..., 0].unsqueeze(-1)  # amplitude
         mu = embedding[..., 1].unsqueeze(-1)  # center frequency
-        sigma = embedding[..., 2].unsqueeze(-1)  # standard deviation
-        omega = embedding[..., 3].unsqueeze(-1)  # angular frequency
+        sigma = embedding[..., 2].unsqueeze(-1)  # standard deviation of gaussian window
+        omega = embedding[..., 3].unsqueeze(-1)  # angular frequency fraction deviation from 2.25 MHz
         s = a.shape  # (_, num_fits)
 
         t = torch.arange(spec_len, dtype=torch.float32).repeat(s[0],s[1],1).to(device)
@@ -88,7 +89,120 @@ class morlet_1D_fitters_real():
         
         return morlet.to(torch.float32)
 
+
+class morlet_1D_fitters_complex():
+    def __init__(self, limits=[1,1,975], device='cpu'):
+        self.limits = limits
+        self.omega = 4.5e-03# 2.25 MHz # TODO: make this an init parameter
     
+    def scale_parameters(self, embedding):
+        a = self.limits[0] * embedding[..., 0] # amplitude
+        mu = self.limits[1] * embedding[..., 1] # mean
+        sigma = self.limits[2] * embedding[..., 2] # standard deviation
+        omega = (self.limits[3] * embedding[..., 3] + 1) * self.omega # +-1% of the angular frequency
+        
+        return torch.stack([a,mu,sigma,omega],axis=2)
+
+    def apply_activations(self, embedding):
+        '''This function takes an embedding and scales it to the limits of the parameters
+        
+        This function implements the Pseudo-Voigt profile as described in: (but not exactly anymore)
+        https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9330705/
+        
+        Args:
+            embedding (torch.Tensor): Tensor of shape (batch_size, num_fits, 4) containing:
+                - A: Area under curve (index 0)
+             - x: Mean position (index 1)
+                - w: Full Width at Half Maximum (FWHM) (index 2)
+                - nu: Lorentzian character fraction (index 3)
+            limits (list): Scale factors for [A, x, w]. Defaults to [1, 1, 975]
+        '''
+        a = nn.Tanh()(embedding[..., 0])/2 + 0.5 # amplitude [0,1]
+        mu = torch.clamp(nn.Tanh()(embedding[..., 1])/2 + 0.5, min=1e-10) # mean [1e-10,1]
+        sigma = torch.clamp(nn.Tanh()(embedding[..., 2])/2 + 0.5, min=0.1) # stdv [0.1,1]
+        omega = nn.Tanh()(embedding[..., 3]) # angular freq [-1,1]
+        
+        return torch.stack([a,mu,sigma,omega],axis=2)
+    
+    def generate_fit(self, embedding, spec_len, **kwargs, ):
+        '''Generate 1D Morlet profiles from embedding parameters.
+        # H2O: 1.5 MRayl (specific acoustic impedance), 1500 m/s -> TT= 13,333 ns
+        impedance, loss coefficient, and travel time of the layer
+        mode (str) : 'echo', 'transmission', 'both' - the acoustic signal type to generate
+
+        not compatible with cwt: pi**-0.25 * (exp(1j*w*(x - mu)) - exp(-0.5*(w**2))) * exp(-0.5*(x - mu)**2)
+        compatible with cwt: exp(1j*w*x/s) * exp(-0.5*(x/s)**2) * pi**(-0.25) * sqrt(1/s)
+
+        Args:
+            embedding (torch.Tensor): Tensor of shape (batch_size, num_fits, 4) containing:
+                - a: Amplitude (index 0)
+                - mu: Center frequency (index 1)
+                - sigma: Standard deviation (index 2)
+                - omega: Angular frequency fraction deviation from 2.25 MHz (index 3)
+            spec_len (int): Length of the spectrum
+        '''
+        device = embedding.device
+        # Unpack embedding tensor along last dimension (shape: [..., 4])
+        a = embedding[..., 0].unsqueeze(-1)  # amplitude
+        mu = embedding[..., 1].unsqueeze(-1)  # center frequency
+        sigma = embedding[..., 2].unsqueeze(-1)  # standard deviation of gaussian window
+        omega = embedding[..., 3].unsqueeze(-1)  # angular frequency fraction deviation from 2.25 MHz
+        s = a.shape  # (_, num_fits)
+
+        t = torch.arange(spec_len, dtype=torch.float32).repeat(s[0],s[1],1).to(device)
+
+        # Calculate Morlet profile
+        morlet = a * torch.exp(-0.5 * ((t - mu) / sigma)**2) * torch.cos(2 * np.pi * omega * (t-mu))
+        
+        return morlet.to(torch.float32)
+
+
+class gaussian_1D_fitters():# TODO: read through math in these (esp art 2) before modifying model
+    '''https://pubs.acs.org/doi/pdf/10.1021/acssensors.1c00787?ref=article_openPDF
+        https://psl.noaa.gov/people/gilbert.p.compo/Torrence_compo1998.pdf'''
+    def __init__(self, limits=[1,1,975], ):
+        self.limits = limits
+    
+    def scale_parameters(self, embedding):
+        a = self.limits[0] * embedding[..., 0] # amplitude
+        mu = self.limits[1] * embedding[..., 1] # mean
+        sigma = self.limits[2] * embedding[..., 2] # standard deviation
+        
+        return torch.stack([a,mu,sigma],axis=2)
+    
+    def apply_activations(self, embedding):
+        '''This function takes an embedding and scales it to the limits of the parameters
+        
+        This function implements the Pseudo-Voigt profile as described in:
+        https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9330705/
+        
+        Args:
+            embedding (torch.Tensor): Tensor of shape (batch_size, num_fits, 4) containing:
+                - A: Area under curve (index 0)
+                - x: Mean position (index 1)
+                - sigma: Standard deviation (index 2)
+            limits (list): Scale factors for [a, mu, sigma]. Defaults to [1, 1, 975]
+        '''
+        a = nn.ReLU()(embedding[..., 0]) # amplitude 
+        mu = torch.clamp(nn.Tanh()(embedding[..., 1])/2 + 0.5, min=1e-3) # mean
+        sigma = torch.clamp(nn.Tanh()(embedding[..., 2])/2 + 0.5, min=1e-3) # standard deviation
+        return torch.stack([a,mu,sigma],axis=2)
+
+    def generate_fit(self, embedding, spec_len, **kwargs, ):
+        """Calculate the Gaussian component of the Pseudo-Voigt profile
+        
+        Args:
+            A (torch.Tensor): Area under curve
+            x (torch.Tensor): Mean positions
+            w (torch.Tensor): Full Width at Half Maximum (FWHM)
+        """
+        t = torch.arange(spec_len, dtype=torch.float32).repeat(s[0],s[1],1).to(embedding.device)
+
+        gaussian = embedding[..., 0] * torch.exp( -4 * torch.log(torch.tensor(2)) \
+                                     * ((t-embedding[..., 1])/embedding[..., 2])**2 )
+        return gaussian.to(torch.float32)
+    
+
 class Fitter_AE:
     """Autoencoder-based fitter for spectroscopic data.
 
