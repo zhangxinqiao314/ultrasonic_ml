@@ -45,7 +45,7 @@ class morlet_1D_fitters_real():
         Args:
             embedding (torch.Tensor): Tensor of shape (batch_size, num_fits, 4) containing:
                 - A: Area under curve (index 0)
-             - x: Mean position (index 1)
+                - x: Mean position (index 1)
                 - w: Full Width at Half Maximum (FWHM) (index 2)
                 - nu: Lorentzian character fraction (index 3)
             limits (list): Scale factors for [A, x, w]. Defaults to [1, 1, 975]
