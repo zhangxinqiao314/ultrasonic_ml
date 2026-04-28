@@ -338,7 +338,7 @@ def training_viewer_(dset, fits, params, idx=0, crop_idx=0):
         min=0, 
         max=fits.shape[1]-1, 
         step=1, 
-        value=0
+        value=0 
     )
     
     # Get initial data

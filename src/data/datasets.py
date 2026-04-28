@@ -37,10 +37,6 @@ class morlet_1D_dataset_real(torch.utils.data.Dataset):
         
         self.spec_len = self.data['processed_'+self.dset_name].shape[-1]
         self.shape = (len(self.numeric_keys),self.crop[1]-self.crop[0])
-        # self.min = np.min(self.data['processed_'+self.dset_name])
-        # self.max = np.max(self.data['processed_'+self.dset_name])
-        # self.mean = np.mean(self.data['processed_'+self.dset_name])
-        # self.std = np.std(self.data['processed_'+self.dset_name])
         
         
     def preprocess_data(self):
@@ -62,9 +58,9 @@ class morlet_1D_dataset_real(torch.utils.data.Dataset):
         self.data['processed_'+self.dset_name] = self.data['processed_'+self.dset_name]/np.max(np.abs(self.data['processed_'+self.dset_name]))   
         self.preprocessed = True
 
-    def preprocess_data_additional(self, func, additional_process_name, *func_args):
+    def preprocess_data_additional(self, func, additional_process_name, **func_args):
         assert self.preprocessed, 'Data has not been preprocessed'
-        self.data['processed_'+self.dset_name+'_'+additional_process_name] = func(self.data['processed_'+self.dset_name], *func_args)
+        self.data['processed_'+self.dset_name+'_'+additional_process_name] = func(self.data['processed_'+self.dset_name], **func_args)
         self.additional_process_name = '_'+additional_process_name
 
     def __getitem__(self, idx):
