@@ -24,6 +24,7 @@ class morlet_1D_dataset_real(torch.utils.data.Dataset):
         self.numeric_keys = [k for k in self.data.keys() if not isinstance(k, str)]
         self.dset_name = dset_name     
         self.dt = self.data['parameters']['measureTime']/ (self.data['parameters']['samples'] - 1)
+        
         type_ = self.dset_name.split('_')[-1]
         if type_ == 'forward':
             self.gain_keys = 'gainForward'
@@ -33,11 +34,13 @@ class morlet_1D_dataset_real(torch.utils.data.Dataset):
             self.gain_offset = 'voltageOffsetReverse'
         self.preprocessed = False
         self.crop = [0, self.data[self.numeric_keys[0]][self.dset_name].shape[-1]] if crop is None else crop
+        
         self.preprocess_data()
         
         self.spec_len = self.data['processed_'+self.dset_name].shape[-1]
         self.shape = (len(self.numeric_keys),self.crop[1]-self.crop[0])
-        
+        self.t = np.arange(0, self.spec_len*self.dt, self.dt)
+        self.freq = np.fft.fftshift(np.fft.fftfreq(self.spec_len, self.dt))
         
     def preprocess_data(self):
         assert not self.preprocessed, 'Data has already been preprocessed'
@@ -58,9 +61,12 @@ class morlet_1D_dataset_real(torch.utils.data.Dataset):
         self.data['processed_'+self.dset_name] = self.data['processed_'+self.dset_name]/np.max(np.abs(self.data['processed_'+self.dset_name]))   
         self.preprocessed = True
 
+    def fft_data(self):
+        self.data['processed_'+self.dset_name+'_fft'] = np.fft.fftshift(np.fft.fft(self.data['processed_'+self.dset_name]))/max(self.freq)
+
     def preprocess_data_additional(self, func, additional_process_name, **func_args):
         assert self.preprocessed, 'Data has not been preprocessed'
-        self.data['processed_'+self.dset_name+'_'+additional_process_name] = func(self.data['processed_'+self.dset_name], **func_args)
+        self.data['processed_'+self.dset_name+'_'+additional_process_name] = np.array([func(x, **func_args) for x in self.data['processed_'+self.dset_name]])
         self.additional_process_name = '_'+additional_process_name
 
     def __getitem__(self, idx):
