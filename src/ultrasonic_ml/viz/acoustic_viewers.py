@@ -92,7 +92,7 @@ class AcousticViewer(param.Parameterized):
             
             
 class AcousticScanViewer(AcousticViewer):
-    dataset = param.Selector(default='hilbert', objects=['hilbert', 'acoustic'])
+    dataset = param.Selector(default='hilbert', objects=['hilbert', 'waveforms'])
     current_x = param.Integer(default=0)
     current_z = param.Integer(default=0)
     current_y = param.Integer(default=0)
@@ -121,14 +121,14 @@ class AcousticScanViewer(AcousticViewer):
     
     def _open_datasets(self):
         group = f"/{self.from_group}"
-        self.acoustic = self.h5[f"{group}/waveforms"]
+        self.waveforms = self.h5[f"{group}/waveforms"]
         self.hilbert = self.h5[f"{group}/hilbert"]
         
         self.shape = self.h5[f"{group}/waveforms"].shape
-        self.time = self.acoustic.attrs['time_array']
+        self.time = self.waveforms.attrs['time_array']
 
     def _close_datasets(self):
-        self.acoustic = None
+        self.waveforms = None
         self.hilbert = None
     
     # -------------------------------------------------------------------------
@@ -144,7 +144,7 @@ class AcousticScanViewer(AcousticViewer):
         return source[int(w), :, :, int(y)]
 
     @lru_cache(maxsize=128)
-    def _fetch_1d_waveform(self, w: int, x: int, z: int): return self.acoustic[w, x, z, :], self.hilbert[w, x, z, :]
+    def _fetch_1d_waveform(self, w: int, x: int, z: int): return self.waveforms[w, x, z, :], self.hilbert[w, x, z, :]
 
     def get_1d_waveform(self, w: int, x: int, z: int) -> tuple: return self._fetch_1d_waveform(int(w), int(x), -int(z))
     
@@ -290,11 +290,12 @@ class AcousticScanViewer(AcousticViewer):
         return dashboard_layout
 
       
-class AcousticScanViewerFFT(AcousticScanViewer):
+class AcousticScanViewerFFT(AcousticScanViewer):# TODO: fix shaping issues
     # current_x = param.Integer(default=0)
     # current_z = param.Integer(default=0)
     # current_y = param.Integer(default=0)
-    dataset = param.Selector(default='hilbert', objects=['hilbert', 'acoustic', 'magnitude', 'phase', 'group_delay'])
+    dataset_options = ['waveforms', 'hilbert', 'auto_corr', 'x_corr', 'tof', 'amplitude', 'fft_magnitude', 'fft_phase', 'fft_group_delay']
+    dataset = param.Selector(default='waveforms', objects=dataset_options)
     
     # -------------------------------------------------------------------------
     # Magic Methods
@@ -325,31 +326,36 @@ class AcousticScanViewerFFT(AcousticScanViewer):
     def clear_cache(self): self._fetch_1d_waveform.cache_clear()    
     
     def _open_datasets(self): # GOOD
-        self.acoustic = self.h5[f"{self.from_group}/waveforms"]
-        self.hilbert = self.h5[f"{self.from_group}/hilbert"]
+        group = f"/{self.from_group}"
+        for name in self.dataset_options:
+            path = f"{group}/{name}"
+            if path in self.h5: setattr(self, name, self.h5[path])
+
+        self.waveforms = self.h5[f"{group}/waveforms"]
+        self.hilbert = self.h5[f"{group}/hilbert"]
 
         print(f"Opening FFT datasets from group: {self.from_group}")
-        self.fft = self.h5[f"fft_data/calculations"] # since input is real, these are only the real portion of fft.
-        self.magnitude = self.db._abs(self.fft)[..., self.crop[0]:self.crop[1]] # TODO: decide whether disp divided by len?
+        self.fft = self.h5[f"{self.from_group}/fft_data/"] # since input is real, these are only the real portion of fft.
+        self.fft_magnitude = self.db._abs(self.fft[..., self.crop[0]:self.crop[1]]) # TODO: decide whether disp divided by len?
         phase = self.db._angle(self.fft)
-        self.phase = phase[..., self.crop[0]:self.crop[1]]        
-        self.group_delay = self.db._group_delay(phase, self.fft.attrs['frequencies'])[..., self.crop[0]:self.crop[1]]
-
+        self.fft_phase = phase[..., self.crop[0]:self.crop[1]]        
+        self.fft_group_delay = self.db._group_delay(phase, self.fft.attrs['frequencies'])[..., self.crop[0]:self.crop[1]]
+    
         self.shape = self.h5[f"{self.from_group}/waveforms"].shape
-        self.time = self.acoustic.attrs['time_array'] # TODO: /1e3 here (ns->us) or change axis formatter?
+        self.time = self.waveforms.attrs['time_array'] # TODO: /1e3 here (ns->us) or change axis formatter?
         self.freq = self.fft.attrs['frequencies'] # TODO: do you want to /1e6 (Hz->MHz) here or change axis formatter?
         self.freq_axis = np.arange(self.crop[1]-self.crop[0])
 
     def _close_datasets(self):
-        self.acoustic = None
+        self.waveforms = None
         self.hilbert = None
         self.fft = None
-        self.magnitude = None
-        self.phase = None
-        self.group_delay = None
+        self.fft_magnitude = None
+        self.fft_phase = None
+        self.fft_group_delay = None
     
     # -------------------------------------------------------------------------
-    # Data Fetchers
+    # Data Fetchers - TODO: different cases and indexing for tof, amplitude, and fft plot displays
     # -------------------------------------------------------------------------
 
     def get_2d_slice(self, w: int, y: int, dataset: str = 'hilbert') -> np.ndarray: # GOOD
@@ -359,71 +365,27 @@ class AcousticScanViewerFFT(AcousticScanViewer):
         Parameters:
             w (int): Index of the waveform.
             y (int): Index of the time step.
-            dataset (str): Dataset to fetch from ('hilbert', 'acoustic', 'magnitude', 'phase', 'group_delay').
+            dataset (str): Dataset to fetch from.
         
         --------
         Returns:
             np.ndarray: 2D slice of the specified dataset.
         '''
-        source = getattr(self, dataset, None)
+        source = getattr(self, dataset)
         if source is None:
             raise ValueError(
-                "dataset must be 'hilbert', 'acoustic', 'magnitude', "
-                "'phase', or 'group_delay'"
+                "dataset must be 'waveforms', 'hilbert',  'tof', 'amplitude', "
+                "'magnitude', 'phase', or 'group_delay'"
             )
+        if source == 'tof' or source == 'amplitude':
+            return source[int(w)]
+        
         return source[int(w), :, :, int(y)]
 
     # -------------------------------------------------------------------------
     # 2D Image Plot 
     # -------------------------------------------------------------------------
-        
-    # def build_spatial_grid(self, direction_idx: int):
-    #     """
-    #     Generates a 2D spatial scan grid for a specific waveform layout plane.
-    #     Includes an active crosshair tracking where you click.
-    #     """
-    #     tap_stream = streams.Tap(x=self.current_x, y=self.current_z)
-
-    #     def spatial_renderer(current_y, current_x, current_z, x, y, dataset):
-    #         # Fetch slice matrix
-    #         grid_data = self.get_2d_slice(direction_idx, current_y, dataset)
-            
-    #         # Create a HoloViews Image object for the 2D grid
-    #         img = hv.Image(
-    #             grid_data.T, 
-    #             kdims=['x', 'z'],
-    #             bounds=(0, 0, self.shape[1], self.shape[2]) #(x0, y0, x1, y1) # changing has no effect
-    #         ).opts(
-    #             title=f"{self.labels[direction_idx]} {dataset.title()} Grid (Y={current_y})",
-    #             cmap='Viridis', colorbar=True, width=self.shape[1]*self.aspect_ratio, height=self.shape[2]*self.aspect_ratio,
-    #             tools=['tap', 'hover'],
-    #         )
-            
-    #         # Crosshair Overlay lines mapping active interaction coordinates
-    #         crosshair = hv.VLine(current_x).opts(color='white', line_dash='dashed', line_width=1.5) * \
-    #                     hv.HLine(current_z).opts(color='white', line_dash='dashed', line_width=1.5)
-            
-    #         return img * crosshair
-            
-    #     state_stream = streams.Params(
-    #         parameterized=self,
-    #         parameters=['current_y', 'current_x', 'current_z', 'dataset'],
-    #     )
-    #     dynamic_grid = hv.DynamicMap(
-    #         spatial_renderer,
-    #         streams=[state_stream, tap_stream],
-    #     )
-
-    #     def update_coordinates(x, y):
-    #         if x is not None and y is not None:
-    #             self.current_x = int(np.clip(x, 0, self.shape[1] - 1))
-    #             self.current_z = int(np.clip(y, 0, self.shape[2] - 1))
-
-    #     tap_stream.add_subscriber(update_coordinates)
-    #     self._spatial_tap_streams[direction_idx] = tap_stream
-        
-    #     return dynamic_grid
-
+      
     # -------------------------------------------------------------------------
     # 1D Waveform Plots
     # -------------------------------------------------------------------------
@@ -439,7 +401,7 @@ class AcousticScanViewerFFT(AcousticScanViewer):
             overlay_elements = []
             
             for w_idx in range(self.shape[0]):
-                wave = self.magnitude[w_idx, current_x, current_z]
+                wave = self.fft_magnitude[w_idx, current_x, current_z]
                 color = self.palette[w_idx % len(self.palette)]
                 label_str = self.labels[w_idx]
                 
@@ -487,7 +449,7 @@ class AcousticScanViewerFFT(AcousticScanViewer):
             overlay_elements = []
             
             for w_idx in range(self.shape[0]):
-                wave = self.phase[w_idx, current_x, current_z]
+                wave = self.fft_phase[w_idx, current_x, current_z]
                 color = self.palette[w_idx % len(self.palette)]
                 label_str = self.labels[w_idx]
                 
@@ -538,7 +500,7 @@ class AcousticScanViewerFFT(AcousticScanViewer):
             plotted_values = []
             
             for w_idx in range(self.shape[0]):
-                wave = self.group_delay[w_idx, current_x, current_z]
+                wave = self.fft_group_delay[w_idx, current_x, current_z]
                 plotted_values.append(np.asarray(wave)[np.isfinite(wave)])
                 color = self.palette[w_idx % len(self.palette)]
                 label_str = self.labels[w_idx]

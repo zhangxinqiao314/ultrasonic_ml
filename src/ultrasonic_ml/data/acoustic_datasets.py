@@ -11,7 +11,8 @@ import pprint
 
 import math
 import numpy as np  
-from scipy.signal import butter, sosfiltfilt, hilbert, find_peaks
+from scipy.signal import butter, sosfiltfilt, hilbert, find_peaks, correlate
+from scipy.interpolate import CubicSpline
 
 from tqdm import tqdm
 
@@ -472,9 +473,20 @@ class AcousticSQlite:
 
 # TODO: AcousticScanDatabase base class. This does not have real functionality
 class AcousticDatabase:
-    def __init__(self, save_folder: str, h5_name: str, sqlite_path: str | None = None):
-        self.save_folder = save_folder
-        self.h5_name = f'{self.save_folder}/{h5_name}'
+    def __init__(self, parent_folder: str, h5_name: str, sqlite_path: str | None = None):
+        '''Initialize the AcousticDatabase.
+        
+        Parameters
+        ----------
+        parent_folder : str
+            The folder containing the SQlite file.
+        h5_name : str
+            The path to the HDF5 file.
+        sqlite_path : str | None, optional
+            The path to the SQLite database file, by default None.
+        '''
+        self.parent_folder = parent_folder
+        self.h5_name = f'{self.parent_folder}/{h5_name}'
         self.sqlite_database = AcousticSQlite(sqlite_path) if sqlite_path else None
         self.shape = None
         self.len = None
@@ -493,15 +505,30 @@ class AcousticDatabase:
     # Database
     # -------------------------------------------------------------------------
         
-    def open_h5(self, mode='a'): return h5py.File(self.h5_name, mode)
+    def open_h5(self, mode='a'): 
+        '''Open the HDF5 file.
+        
+        Parameters
+        ----------
+        mode : str, optional
+            The mode to open the file in, by default 'a'.
+
+        Returns
+        -------
+        h5py.File
+            The open h5py file.
+        '''
+        return h5py.File(self.h5_name, mode)
     
     def get_check_group(self, h5, group_name: str):
-        '''Check if the match_first_break group exists and return the waveforms and hilbert data.
+        '''Check if the waveform group exists and return the waveforms and hilbert data.
 
         Parameters
         ----------
         h5 : h5py.File
             The open h5py file.
+        group_name : str
+            The name of the group to check.
 
         Returns
         -------
@@ -512,45 +539,90 @@ class AcousticDatabase:
         except KeyError as e: print(e, f'Run setup for {group_name} first')
 
     def _print_schema(self, h5, tab: str = ''):
+        '''Recursively print the schema of the HDF5 file.
+        
+        Parameters
+        ----------
+        h5 : h5py.File
+            The open h5py file.
+        tab : str, optional
+            The tab spacing for the schema print, by default ''.
+        '''
         for name, obj in h5.items():
             print(f"{tab}|--{obj}")
             if isinstance(obj, h5py.Group):
                 self._print_schema(obj, tab + '|  ')
                 
     def print_schema(self): 
+        '''Print the schema of the HDF5 file.'''
         with self.open_h5() as h5:
             print(f"{h5}")
             self._print_schema(h5)
     
-    def print_sqlite_schema(self): self.sqlite_database.print_schema()
+    def print_sqlite_schema(self): 
+        '''Print the schema of the SQLite database.'''
+        self.sqlite_database.print_schema()
     
-    def sqlite_to_h5(self): raise NotImplementedError # specific to the child class
+    def sqlite_to_h5(self): 
+        """Hook to convert the SQLite database to an HDF5 file.
+        This method sets up the parameters, raw dataset, and indexing parameters. """
+        raise NotImplementedError # specific to the child class
 
     # -------------------------------------------------------------------------
     # Parameters
     # -------------------------------------------------------------------------
         
     def print_parameters(self):
+        '''Pretty-print the parameters dictionary with a threshold for large arrays.'''
         with np.printoptions(threshold=10, edgeitems=2,):
             # Adjust 'indent' to change tab sizing if needed
             pprint.pprint(self.parameters, indent=4, compact=True)
             
     def get_sqlite_parameters(self): # TODO: finish filling these out. Make template a part of docs page. 
+        '''Get the parameters from the SQLite database and return them as a dictionary with units and descriptions.'''
         # with units and descriptions
-        parameters = {
+        parameters = { # TODO: fix multiplexer measurments with scanned/changing offsets and gains.
+            'experiment': {
+                'value': self.sqlite_database.parameters['experiment'],
+                'description': '''options: 
+                    'move': move the transducers 
+                    'single pulse': perform a single test pulse
+                    'repeat pulse': repeat a pulse at a single location for a given time and frequency
+                    'single scan': perform a single 2D scan/ 'multi scan': repeat a 2D scan with a set frequency
+                    'sweep': repeat pulse changing through parameters given in sweepParameters ''' },
+            'collectionMode': {
+                'value': self.sqlite_database.parameters['collectionMode'],
+                'description': '''options:
+                    'echo': collect the echo signal from the transducer
+                    'transmission': collect the transmitted signal from the transducer
+                    'both': collect both echo and transmitted signals''' },
+            'pulserType': {
+                'value': self.sqlite_database.parameters['pulserType'],
+                'description': '''options:
+                    'standard': single wave CompactPulser. 
+                    'tone burst': USBUT350 tone burst pulser'''},
             'transducerFrequency': {
                 'value': self.sqlite_database.parameters['transducerFrequency'], 
-                'unit': 'MHz', 'description': 'Transducer center frequency'}, 
+                'unit': 'MHz', 
+                'description': 'Transducer center frequency'}, 
             'measureTime': {
                 'value': self.sqlite_database.parameters['measureTime'], 
-                'unit': 'us', 'description': 'Measurement time'},
+                'unit': 'us', 
+                'description': 'Approx measurement time, in us. Note this can be changed by the picoscope time interval based on samples. Changes to the measureTime will be printed in the console when the script is run'},
             'measureDelay': {
                 'value': self.sqlite_database.parameters['measureDelay'], 
-                'unit': 'us', 'description': 'Measurement delay'},
+                'unit': 'us', 
+                'description': 'Approx delay after trigger to start measuring, in us'},
             'voltageRange': {
                 'value': self.sqlite_database.parameters['voltageRange'], 
                 'unit': 'V', 
-                'description': 'Voltage range'},
+                'description': 'Picoscope voltage range for transmission transducer in V. Note this is the total range: 1 V = [-0.5 V, 0.5 V]'},
+            'waves': {
+                'value': self.sqlite_database.parameters['waves'],
+                'description': 'Number of waves to collect and average'},
+            'samples': {
+                'value': self.sqlite_database.parameters['samples'],
+                'description': 'Number of data points per wave'},
             'dt': {
                 'value': self.sqlite_database.parameters['dt'], 
                 'unit': 's', 
@@ -559,36 +631,15 @@ class AcousticDatabase:
                 'value': self.sqlite_database.parameters['f_s'], 
                 'unit': 'Hz', 
                 'description': 'Sampling frequency'},
-            'experiment': {
-                'value': self.sqlite_database.parameters['experiment'],
-                'description': ''''move': move the transducers/ 'single pulse': perform a single test pulse/ 'repeat pulse': repeat a pulse at a single location for a given time and frequency/ 'single scan': perform a single 2D scan/ 'multi scan': repeat a 2D scan with a set frequency/ 'sweep': repeat pulse changing through parameters given in sweepParameters'''},
             'pulserPort': {
                 'value': self.sqlite_database.parameters['pulserPort'],
                 'description': 'COM port for the pulser'},
-            'collectionMode': {
-                'value': self.sqlite_database.parameters['collectionMode'],
-                'description': 'transmission/echo/both'},
-            'pulserType': {
-                'value': self.sqlite_database.parameters['pulserType'],
-                'description': ''' 'standard': single wave CompactPulser. 'tone burst': USBUT350 tone burst pulser'''},
             'multiplexer': {
                 'value': self.sqlite_database.parameters['multiplexer'],
                 'description': 'True/False: whether a multiplexer is used'},
             'collectionDirection': {
                 'value': self.sqlite_database.parameters['collectionDirection'],
                 'description': 'forward/reverse/both'},
-            'autoRange': {
-                'value': self.sqlite_database.parameters['autoRange'],
-                'description': ''},
-            'autoRangeEcho': {
-                'value': self.sqlite_database.parameters['autoRangeEcho'],
-                'description': ''},
-            'waves': {
-                'value': self.sqlite_database.parameters['waves'],
-                'description': ''},
-            'samples': {
-                'value': self.sqlite_database.parameters['samples'],
-                'description': ''},
             'picoModule': {
                 'value': self.sqlite_database.parameters['picoModule'],
                 'description': ''},
@@ -597,28 +648,77 @@ class AcousticDatabase:
                 'description': ''},
         }
         
+        ### experiment types ###
         # scan specific parameters
-        if parameters['experiment']['value'] == 'single scan' or parameters['experiment']['value'] == 'multi scan':
+        if 'scan' in parameters['experiment']['value']:
             for k in  ['primaryAxis','secondaryAxis']: 
-                parameters[k] = {
-                    'value': self.sqlite_database.parameters[k]}
+                parameters[k] = { 'value': self.sqlite_database.parameters[k]}
             for k in ['primaryAxisRange', 'primaryAxisStep', 'secondaryAxisRange', 'secondaryAxisStep']: 
                 parameters[k] = {
                     'value': self.sqlite_database.parameters[k], 
-                    'unit': 'mm'}
-        if parameters['experiment']['value'] == 'multi scan': pass # experimentBaseName, 
-        if parameters['experiment']['value'] == 'repeat pulse': pass #     'pulseInterval' : Minimum time between pulse collection, in seconds, 'experimentTime' : 5,                           # For repeat pulse: Time to collect data, in seconds
-
-        if parameters['collectionMode']['value'] == 'transmission': pass # parameters['voltage_offset'] = {'value': self.sqlite_database.parameters['voltage_offset'], 'unit': 'V'}
-        if parameters['collectionMode']['value'] == 'echo': pass # parameters['voltage_offset'] = {'value': self.sqlite_database.parameters['voltage_offset'], 'unit': 'V'}
-        if parameters['collectionMode']['value'] == 'both':     
-            parameters['voltage_gain'] = {
-                'value':{
-                    'forward':self.sqlite_database.parameters['gainForward'], 
-                    'reverse': self.sqlite_database.parameters['gainReverse']} }
+                    'unit': 'mm'}  
+            parameters['scannerPort'] = {
+                'value': self.sqlite_database.parameters['scannerPort'],
+                'description': 'Scanner port name' }
             
+        # repeat measurement specific parameters
+        if 'multi' in parameters['experiment']['value'] or 'repeat' in parameters['experiment']['value']:
+            parameters['scanInterval'] =  {
+                'value': self.sqlite_database.parameters['scanInterval'], 
+                'unit': 's',
+                'description': 'For multi scans: Minimum time between start of scans'}
+            parameters['numberOfScans'] = {
+                'value': self.sqlite_database.parameters['numberOfScans'],
+                'description': 'For multi scans: Number of times to run the scan'}
+            parameters['pulseInterval'] = {
+                'value': self.sqlite_database.parameters['pulseInterval'],
+                'unit': 's',
+                'description': 'For repeat pulse: Minimum time between pulse collection, in seconds' }
+            parameters['experimentTime'] = {
+                'value': self.sqlite_database.parameters['experimentTime'],
+                'unit': 's',
+                'description': 'For repeat pulse: Time to collect data, in seconds' }
+        # sweep specific parameters
+        if 'sweep' in parameters['experiment']['value']:
+            parameters['sweepParameters'] = {
+                'value': self.sqlite_database.parameters['sweepParameters'],
+                'description': 'For sweep: Parameters to sweep through, in the format of a dictionary. Example: {"transducerFrequency": [1, 2, 3], "measureTime": [10, 20]}'} 
+        
+        ### collection mode ###
+        if parameters['collectionMode']['value'] == 'transmission' or parameters['collectionMode']['value'] == 'both': 
+            print('autoRange')
+            parameters['autoRange'] = {
+                'value': self.sqlite_database.parameters['autoRange'], 
+                'description': 'Set the oscilloscope to rerun measurements where the voltage range of the wave has significantly changed. This enables the tightest possible voltageRange to be used, increasing the accuracy of low intensity signals without cutting off high intensity ones. For transmission measurements, this changes the voltage range on the oscilloscope'}
+            print('Auto range is', parameters['autoRange']['value'])
+            if parameters['autoRange']['value']: # TODO: check
+                if parameters['collectionDirection']['value'] == 'forward' or parameters['collectionDirection']['value'] == 'both': 
+                    parameters['voltageOffsetForward'] = {
+                        'value': self.sqlite_database.parameters['voltageOffsetForward'], 
+                        'unit': 'V'}                
+                if parameters['collectionDirection']['value'] == 'reverse' or parameters['collectionDirection']['value'] == 'both': 
+                    parameters['voltageOffsetReverse'] = {
+                        'value': self.sqlite_database.parameters['voltageOffsetReverse'], 
+                        'unit': 'V'}
+        elif parameters['collectionMode']['value'] == 'echo' or parameters['collectionMode']['value'] == 'both': 
+            parameters['autoRangeEcho'] = {
+                'value': self.sqlite_database.parameters['autoRangeEcho'], 
+                'description': 'Set the oscilloscope to rerun measurements where the voltage range of the wave has significantly changed. This enables the tightest possible voltageRange to be used, increasing the accuracy of low intensity signals without cutting off high intensity ones. For echo measurements, this can add significant overhead (2-3x increase in collection time) for each waveform where the range changes'}
+            if parameters['autoRangeEcho']['value']: 
+                if parameters['collectionDirection']['value'] == 'forward' or parameters['collectionDirection']['value'] == 'both': 
+                    parameters['voltageOffsetForward'] = {
+                        'value': self.sqlite_database.parameters['voltageOffsetForward'], 
+                        'unit': 'V'}                
+                if parameters['collectionDirection']['value'] == 'reverse' or parameters['collectionDirection']['value'] == 'both': 
+                    parameters['voltageOffsetReverse'] = {
+                        'value': self.sqlite_database.parameters['voltageOffsetReverse'], 
+                        'unit': 'V'}
+        
+        ### pulser type ###
         if parameters['pulserType']['value'] == 'tone burst': 
-            parameters['halfCycles'] = self.sqlite_database.parameters['halfCycles']
+            parameters['halfCycles'] = {
+                'value': self.sqlite_database.parameters['halfCycles'], 
+                'description': 'Number of half-cycles in a tone burst pulse. Minimum 1, maximum 32'}
 
         if parameters['multiplexer']['value']:
             for k in  ['multiplexerPort','rfSwitch', 't0PulseSwitch', 't0ReceiveSwitch', 't1PulseSwitch', 't1ReceiveSwitch']:
@@ -627,8 +727,8 @@ class AcousticDatabase:
         ####################################################
         # To format in the parameters table by index
         ####################################################
-        if parameters['autoRange']['value']: pass
-        if parameters['autoRangeEcho']['value']: pass
+        # if parameters['autoRange']['value']: pass
+        # if parameters['autoRangeEcho']['value']: pass
         
         ####################################################
         # for plotting
@@ -639,8 +739,7 @@ class AcousticDatabase:
         return parameters
                   
     def save_parameters(self):
-        '''Save the parameters dictionary to the HDF5 file as a JSON string. 
-        Create dataset config_metadata in the root of the HDF5 file if it does not exist.'''
+        '''Save the parameters dictionary to HDF5 file as a JSON string. Create dataset "config_metadata" in the root of the HDF5 file if it does not exist.'''
         with self.open_h5() as h5:
             json_str = json.dumps(self.parameters, cls=NumpyEncoder) # Convert dictionary to a JSON string
             dt = h5py.special_dtype(vlen=str) # save as special h5 type
@@ -649,6 +748,7 @@ class AcousticDatabase:
             h5.require_dataset('config_metadata', (), data=json_str, dtype=dt)
 
     def load_parameters(self): 
+        '''Load the parameters dictionary from HDF5 file. Read dataset "config_metadata" in the root of the HDF5 file and convert it from a JSON string to a dictionary.'''
         print('Loading h5 parameters...')
         with self.open_h5() as h5:
             loaded_json = h5['config_metadata'][()]
@@ -658,23 +758,72 @@ class AcousticDatabase:
             self.len = self.parameters['len']
         print('\tFinished.')
 
-    def setup_parameters(self): raise NotImplementedError # specific to the child class. must also set time_array, shape, and len
+    def setup_parameters(self): 
+        """Hook to setup the parameters for the dataset. Gets the parameters from the SQLite database and calculates the shape and length of the dataset. Saves the parameters to the HDF5 file."""
+        raise NotImplementedError # specific to the child class. must also set time_array, shape, and len
+
+    # -------------------------------------------------------------------------
+    # Indexing
+    # -------------------------------------------------------------------------
+    def setup_indexed_parameters(self, keys, shapes):
+        '''Creates the 'indexed_parameters' group in the HDF5 file and sets up datasets for each parameter with the appropriate shape and data type.
+        
+        Parameters
+        ----------
+        keys : list[str]
+            List of parameter names to write.
+        values : list[np.ndarray]
+            List of parameter values to write.
+        shapes : list[tuple]
+            List of shapes for each parameter.
+        '''
+        for k, s in zip(keys, shapes):
+            with self.open_h5() as h5:
+                grp = h5.require_group('indexed_parameters')
+                grp.require_dataset(k, shape=s, dtype='f4', track_order=True)
+    
+    def fill_indexed_parameter(self, keys, values, shapes, idxs=None): # TODO: better and more scalable way to do keys and values?
+        '''Fill parameter datasets with values.
+        
+        Parameters
+        ----------
+        keys : list[str]
+            Indexing parameter datasets to write in.
+        values : list[np.ndarray]
+            List of parameter values to write.
+        shapes : list[tuple]
+            List of shapes for each parameter.
+        idxs : list[Index] optional
+            List of indices to write at.
+        '''            
+        with self.open_h5() as h5: 
+            if not idxs:
+                for k, v, s in tqdm(zip(keys, values, shapes)):
+                    h5['indexed_parameters'][k][...] = np.array(v).reshape(s)
+            else: # TODO: fix in future for more than 1D indexing. This is a temporary fix for 1D indexing.
+                for i, idx in enumerate(idxs):
+                    h5['indexed_parameters'][k][idx] = v[i]
+       
+    def write_indexed_parameters(self):
+        """Hook to write indexed parameters to the HDF5 file. Calls setup and fill functions with specific indexer. This method should be implemented in the child class."""
+        raise NotImplementedError # specific to the child class   
+           
+    def idx_sqlite_data_generator(self): 
+        '''Hook to generate indexed data from SQLite database. To be used for writing raw data. This method is specific to the shape of the experiment and should be implemented in the child class.'''
+        raise NotImplementedError # specific to the child class
+    
+    # fill _ with some combination of whatever axis are in the dataset (w_x_z, x_z, w_y, etc.)
+    def _generator(self): 
+        '''Hook to generate data for filling the raw dataset. This method is specific to the shape of the experiment and should be implemented in the child class.'''
+        raise NotImplementedError # specific to the child class
     
     # -------------------------------------------------------------------------
     # Raw data
     # -------------------------------------------------------------------------
         
     def setup_raw_dataset(self):
-        '''Write raw data and parameters to the HDF5 file.
-        
-        Parameters
-        ----------
-        data : np.ndarray
-            The raw data to write.
-        time_array : float
-            The time array.
-        parameters : dict
-            The parameters to write.
+        '''Creates the 'raw_data' group in the HDF5 file and sets up the 'waveforms' and 'hilbert' datasets with the appropriate shape and data type. 
+        It also saves the time array as an attribute of the 'waveforms' dataset.
         '''
 
         with self.open_h5() as h5:
@@ -698,30 +847,66 @@ class AcousticDatabase:
             
             for idx, data in tqdm(idx_data, desc="Filling raw data", total=math.prod(self.shape[:-1])):
                 dset[idx] = data
-
-    # -------------------------------------------------------------------------
-    # Indexing
-    # -------------------------------------------------------------------------
     
-    def write_indexed_parameter(self, keys, values, shapes): raise NotImplementedError # specific to the child class
-       
-    def idx_sqlite_data_generator(self): raise NotImplementedError # specific to the child class
-    
-    # fill _ with some combination of whatever axis are in the dataset (w_x_z, x_z, w_y, etc.)
-    def _generator(self): raise NotImplementedError # specific to the child class
+    def write_preprocessed_data(self, **kwargs):
+        """Hook to write preprocessed data to the HDF5 file. Calls setup and fill functions with specific indexer. This method should be implemented in the child class."""
+        raise NotImplementedError # specific to the child class
 
     # -------------------------------------------------------------------------
     # Preprocessing
     # -------------------------------------------------------------------------
     
     @staticmethod
-    def _absolute_max(waveform): return float(np.max(np.abs(waveform)))
+    def _absolute_max(waveform): 
+        '''Calculate the absolute maximum of a waveform.
+        
+        Parameters
+        ----------
+        waveform : np.ndarray
+            The input waveform. Should be 1D array of shape (time_length,).
+
+        Returns
+        -------
+        float
+            The absolute maximum of the waveform.
+        '''
+        return float(np.max(np.abs(waveform)))
 
     @staticmethod
-    def _hilbert_window(waveform): return np.abs(hilbert(waveform))
+    def _hilbert_window(waveform): 
+        '''Calculate the hilbert envelope of a waveform.
+        
+        Parameters
+        ----------
+        waveform : np.ndarray
+            The input waveform. Should be 1D array of shape (time_length,).
+
+        Returns
+        -------
+        float
+            The hilbert envelope of the waveform.
+        '''
+        return np.abs(hilbert(waveform))
 
     @staticmethod
-    def _undo_gain(waveform, gain, offset): return (waveform - offset) / gain
+    def _undo_gain(waveform, gain, offset): 
+        '''Undo the gain of a waveform.
+        
+        Parameters
+        ----------
+        waveform : np.ndarray
+            The input waveform. Should be 1D array of shape (time_length,).
+        gain : float
+            The gain to undo.
+        offset : float
+            The offset to undo.
+
+        Returns
+        -------
+        np.ndarray
+            The waveform with the gain undone.
+        '''
+        return (waveform - offset) / gain
     
     def _build_filter_sos(self, lower_fs_coeff: float, upper_fs_coeff: float, filter_order: int) -> Any:
         """Build Butterworth bandpass filter coefficients.
@@ -729,9 +914,9 @@ class AcousticDatabase:
         Parameters
         ----------
         lower_fs_coeff : float
-            Highpass filter lower limit of C*f_s.
+            Highpass filter lower limit of lower_fs_coeff*f_s.
         upper_fs_coeff : float
-            Lowpass filter upper limit of C*f_s.
+            Lowpass filter upper limit of upper_fs_coeff*f_s.
         filter_order : int
             The order of the filter.
 
@@ -754,9 +939,9 @@ class AcousticDatabase:
         apply_filter : bool
             Whether to apply a bandpass filter to the data.
         lower_fs_coeff : float
-            Highpass filter lower limit of C*f_s.
+            Highpass filter lower limit of lower_fs_coeff*f_s.
         upper_fs_coeff : float
-            Lowpass filter upper limit of C*f_s.
+            Lowpass filter upper limit of upper_fs_coeff*f_s.
         filter_order : int
             The order of the filter.
         '''
@@ -781,7 +966,7 @@ class AcousticDatabase:
         ----------
         idxs : Iterator[tuple]
             An iterator of tuples, where each tuple contains an index.
-            The index should fill axis until the last dimension.
+            The index should fill axis until the last dimension. Data will be retrieved from the raw_data group
         '''
         with self.open_h5() as h5:
             waveform_dset, hilbert_dset = self.get_check_group(h5, 'preprocessed_data')
@@ -795,19 +980,299 @@ class AcousticDatabase:
                 waveform_dset[*idx] = data
                 hilbert_dset[*idx] = self._hilbert_window(data)
 
+    def write_preprocessed_data(self):
+        """Write preprocessed data to the HDF5 file. Calls setup and fill functions with specific indexer."""
+        raise NotImplementedError
+    
     # -------------------------------------------------------------------------
-    # Alignment
+    # Basic Analysis
+    # -------------------------------------------------------------------------
+    
+    @staticmethod
+    def _tof_idx(hilbert, threshold_fraction=0.1):
+        '''
+        Calculate the time of flight based on the hilbert envelope of the waveform and a threshold fraction of the max.
+        
+        Parameters:
+        -----------
+        hilbert: np.ndarray
+            The 1D analytic signal (Hilbert transform) of the waveform.
+        threshold_fraction: float
+            The fraction of the maximum value to use as the threshold for detecting the peak.
+
+        Returns:
+        --------
+        np.ndarray
+            The time of flight for each waveform.
+        '''
+        threshold_ = hilbert.max()*threshold_fraction
+        return int(np.argmax(hilbert > threshold_))
+      
+    def setup_tof_data(self, from_group='preprocessed_data', threshold_fraction=0.1):
+        '''
+        Set up the group storing waveforms aligned by first breakfor the dataset.
+        
+        Parameters
+        ----------
+        from_group : str
+            The name of the group from which to read the waveforms to align.
+        threshold : float
+            The fraction of the maximum value to use as the threshold for detecting the peak.
+        '''
+        
+        with self.open_h5() as h5:
+            _,hilbert = self.get_check_group(h5, from_group)
+            dset = h5[from_group].require_dataset('tof', shape=hilbert.shape[:-1], dtype='f4', track_order=True)
+            dset.attrs['threshold_fraction'] = threshold_fraction
+            dset.attrs['from_group'] = from_group
+            
+    def fill_tof_data(self, idxs: Iterator[tuple], from_group='preprocessed_data') -> None:
+        """Align the first break of the waveforms in the dataset and write to new dataset
+
+        Parameters
+        ----------
+        idxs : Iterator[tuple]
+            An iterator of tuples containing indices to span all but first and last axis.
+        from_group : str
+            The name of the group from which to read the waveforms to align.
+        """          
+        with self.open_h5() as h5:
+            threshold_fraction = h5[from_group]['tof'].attrs['threshold_fraction']
+            hilbert = h5[from_group]['hilbert']
+            time_array = h5[from_group]['waveforms'].attrs['time_array']
+            tof_dset = h5[from_group]['tof']
+            
+            for idx in tqdm(idxs, desc="Calculating ToF", total=math.prod(self.shape[:-1])):
+                tof_idx = self._tof_idx(hilbert[*idx], threshold_fraction=threshold_fraction)
+                tof_dset[*idx] = time_array[tof_idx]
+    
+    def write_tof_data(self):
+        """Write time of flight data to the HDF5 file. Calls setup and fill functions with specific indexer."""
+        raise NotImplementedError
+        
+        
+    @staticmethod
+    def _amplitude(hilbert, crop=None):
+            '''
+            Calculate the amplitude of the hilbert envelope of the waveform. Optionally crop the hilbert signal before calculating the amplitude.
+            
+            Parameters:
+            -----------
+            hilbert: np.ndarray
+                The 1D analytic signal (Hilbert transform) of the waveform.
+            crop: tuple
+                The start and end indices for cropping the hilbert signal.
+    
+            Returns:
+            --------
+            np.ndarray
+                The amplitude of the hilbert envelope for each waveform.
+            '''
+            if crop is not None: hilbert = hilbert[crop[0]:crop[1]]
+            return (hilbert.max())
+             
+    def setup_amplitude_data(self, from_group='preprocessed_data', crop=None):
+        '''
+        Set up the group storing waveforms aligned by first breakfor the dataset.
+        
+        Parameters
+        ----------
+        from_group : str
+            The name of the group from which to read the waveforms to align.
+        crop : tuple
+            The start and end indices for cropping the hilbert signal before calculating the amplitude.
+        '''
+        with self.open_h5() as h5:
+            _,hilbert = self.get_check_group(h5, from_group)
+            h5[from_group].require_dataset('amplitude', shape=hilbert.shape[:-1], dtype='f4', track_order=True)
+            if crop is not None: h5[from_group]['amplitude'].attrs['crop'] = crop    
+            
+    def fill_amplitude_data(self, idxs: Iterator[tuple], from_group='preprocessed_data', crop=None) -> None:
+        """Align the first break of the waveforms in the dataset and write to new dataset
+
+        Parameters
+        ----------
+        idxs : Iterator[tuple]
+            An iterator of tuples containing indices to span all but first and last axis.
+        from_group : str
+            The name of the group from which to read the waveforms to align.
+        crop : tuple
+            The start and end indices for cropping the hilbert signal before calculating the amplitude.
+        """          
+        with self.open_h5() as h5:
+            hilbert = h5[from_group]['hilbert']
+            amplitude_dset = h5[from_group]['amplitude']
+            
+            for idx in tqdm(idxs, desc="Calculating Amplitude", total=math.prod(self.shape[:-1])):
+                amplitude_dset[*idx] = self._amplitude(hilbert[*idx], crop=crop)
+    
+    def write_amplitude_data(self):
+        """Write amplitude data to the HDF5 file. Calls setup and fill functions with specific indexer."""
+        raise NotImplementedError         
+           
+           
+    @staticmethod
+    def _autocorrelate(waveform, mode='full'): # TODO: Edge effects.
+            '''
+            Calculate the autocorrelation of the waveform.
+            
+            Parameters:
+            -----------
+            waveform: np.ndarray
+                The 1D waveform to calculate the autocorrelation of.
+
+            Returns:
+            --------
+            np.ndarray
+                The autocorrelation of the waveform.
+            '''
+            return correlate(waveform, waveform, mode=mode)
+             
+    def setup_autocorrelation_data(self, from_group='preprocessed_data', mode = 'full'):
+        '''
+        Set up the group storing waveforms aligned by first breakfor the dataset.
+        
+        Parameters
+        ----------
+        from_group : str
+            The name of the group from which to read the waveforms to align.
+        mode : str
+            The mode to use for the autocorrelation calculation.
+        crop : tuple
+            The start and end indices for cropping the hilbert signal before calculating the amplitude.
+        '''
+        with self.open_h5() as h5:
+            _,hilbert = self.get_check_group(h5, from_group)
+            auto_corr = h5[from_group].require_dataset('auto_corr', shape=hilbert.shape, dtype='f4', track_order=True)
+            auto_corr.attrs['from_group'] = from_group
+            auto_corr.attrs['mode'] = mode
+            
+    def fill_autocorrelation_data(self, idxs: Iterator[tuple], from_group='preprocessed_data', mode='full') -> None:
+        """Align the first break of the waveforms in the dataset and write to new dataset
+
+        Parameters
+        ----------
+        idxs : Iterator[tuple]
+            An iterator of tuples containing indices to span all but first and last axis.
+        from_group : str
+            The name of the group from which to read the waveforms to align.
+        mode : str
+            The mode to use for the autocorrelation calculation.
+        crop : tuple
+            The start and end indices for cropping the hilbert signal before calculating the amplitude.
+        """          
+        with self.open_h5() as h5:
+            waveforms = h5[from_group]['waveforms']
+            h5[from_group].require_dataset('auto_corr', shape=waveforms.shape, dtype='f4', track_order=True)
+            for idx in tqdm(idxs, desc= "Calculating Autocorrelation", total=math.prod(self.shape[:-1])):
+                h5[from_group]['auto_corr'][*idx] = self._autocorrelate(waveforms[*idx], mode=mode)
+    
+    def write_autocorrelation_data(self, mode):
+        """Write amplitude data to the HDF5 file. Calls setup and fill functions with specific indexer."""
+        raise NotImplementedError         
+            
+             
+    @staticmethod
+    def _xcorr(waveform, mother_waveform, mode='same'):
+            '''
+            Calculate the cross-correlation of the waveform with the mother waveform.
+
+            Parameters:
+            -----------
+            waveform: np.ndarray
+                The 1D waveform to calculate the cross-correlation of.
+            mother_waveform: np.ndarray
+                The 1D mother waveform to cross-correlate with.
+
+            Returns:
+            --------
+            np.ndarray
+                The cross-correlation of the waveform with the mother waveform.
+            '''
+            return correlate(waveform, mother_waveform, mode=mode)
+            
+    def _interp_mother_waveform(self, time_array, mother_waveform, mother_time_array):
+        '''
+        Interpolate the mother waveform to match the time array of the dataset.
+
+        Parameters:
+        -----------
+        mother_waveform: np.ndarray
+            The 1D mother waveform to interpolate.
+
+        Returns:
+        --------
+        (np.ndarray, np.ndarray)
+            The interpolated mother waveform and its corresponding time array.
+        '''
+        time_array = self.parameters['time_array']
+        t_diff = mother_time_array[0]-time_array[0] # so interpolated and true data start at the same time. TODO: phase effect?
+        interp_func = CubicSpline(mother_time_array-t_diff, mother_waveform)  
+        new_waveform = interp_func(time_array[:len(mother_waveform)])      
+        return new_waveform/np.max(np.abs(new_waveform)), time_array[:len(mother_waveform)]
+            
+    def setup_xcorrelation_data(self, mother_waveform, mother_time_array, from_group='preprocessed_data', mode='same'):
+        '''
+        Set up the group storing waveforms aligned by first breakfor the dataset.
+        
+        Parameters
+        ----------
+        from_group : str
+            The name of the group from which to read the waveforms to align.
+        mother_waveform : np.ndarray
+            The mother waveform to use for cross-correlation.
+        mother_time_array : np.ndarray
+            The time array of the mother waveform.
+        mode : str
+            The mode to use for the cross-correlation calculation.
+        crop : tuple
+            The start and end indices for cropping the hilbert signal before calculating the amplitude.
+        '''
+        with self.open_h5() as h5:
+            waveform, hilbert = self.get_check_group(h5, from_group)
+            x_corr = h5[from_group].require_dataset('x_corr', shape=hilbert.shape, dtype='f4', track_order=True)
+            x_corr.attrs['mode'] = mode
+            x_corr.attrs['mother_waveform'], x_corr.attrs['mother_time_array'] = self._interp_mother_waveform(waveform.attrs['time_array'], mother_waveform, mother_time_array)
+            
+    def fill_xcorrelation_data(self, idxs: Iterator[tuple], from_group='preprocessed_data', mode='same') -> None:
+        """Align the first break of the waveforms in the dataset and write to new dataset
+
+        Parameters
+        ----------
+        idxs : Iterator[tuple]
+            An iterator of tuples containing indices to span all but first and last axis.
+        from_group : str
+            The name of the group from which to read the waveforms to align.
+        mode : str
+            The mode to use for the cross-correlation calculation.
+        crop : tuple
+            The start and end indices for cropping the hilbert signal before calculating the amplitude.
+        """          
+        with self.open_h5() as h5:
+            waveforms = h5[from_group]['waveforms']
+            mother_waveform = h5[from_group]['x_corr'].attrs['mother_waveform']
+            mother_time_array = h5[from_group]['x_corr'].attrs['mother_time_array']
+            
+            for idx in tqdm(idxs, desc= "Calculating Cross-correlation", total=math.prod(self.shape[:-1])):
+                h5[from_group]['x_corr'][*idx] = self._xcorr(waveforms[*idx], mother_waveform, mode=mode)
+    
+    def write_xcorrelation_data(self, mode):
+        """Write amplitude data to the HDF5 file. Calls setup and fill functions with specific indexer."""
+        raise NotImplementedError         
+      
+    # -------------------------------------------------------------------------
+    # Alignment - TODO: add feature for phase shift after alignment? to make sure the waves line up?
     # -------------------------------------------------------------------------
     
     @staticmethod
     def _calculate_rollback(waveform):
         '''
-        Calculate the average rollback value fo each of the mean waveforms
+        Calculate the average rollback value for each of the mean waveforms from forward and reverse directions
         
         Parameters:
         -----------
         waveform: np.ndarray
-            The waveform data.
+            The waveform data with the collection direction in the first axis and the time in the last axis
             
         Returns:
         --------
@@ -862,9 +1327,9 @@ class AcousticDatabase:
             new_shape = hilbert_dset.shape
             rollbacks = waveform_dset.attrs['rollbacks']
 
-            for idx in tqdm(idxs, desc="Aligning first break", total=math.prod(self.shape[1:-1])):
-                waveform_dset[*idx] = waveform_dset_unrolled[*idx,rollbacks[idx[0]]:new_shape[-1]+rollbacks[idx[0]]]
-                hilbert_dset[*idx] = hilbert_dset_unrolled[*idx,rollbacks[idx[0]]:new_shape[-1]+rollbacks[idx[0]]]
+            for idx in tqdm(idxs, desc="Aligning first break", total=math.prod(self.shape[:-1])):
+                    waveform_dset[*idx] = waveform_dset_unrolled[*idx,rollbacks[idx[0]]:new_shape[-1]+rollbacks[idx[0]]]
+                    hilbert_dset[*idx] = hilbert_dset_unrolled[*idx,rollbacks[idx[0]]:new_shape[-1]+rollbacks[idx[0]]]
     
     # -------------------------------------------------------------------------
     # Basic viz
@@ -886,8 +1351,17 @@ class AcousticDatabaseFFT(AcousticDatabase):
     When transforming back to time domain, mirror around 0 frequency and perform inverse FFT.
     '''
     def __init__(self, window=np.hanning, **kwargs):
+        '''Initialize the AcousticDatabaseFFT class.
+        
+        Parameters
+        ----------
+        window : callable, optional
+            A window function to apply to the waveform before performing the FFT. Default is np.hanning
+            must be called in format:self.window(<length>) to return a 1D array of length <length>
+        '''
         super().__init__(**kwargs)
         self.window = window
+        
     # -------------------------------------------------------------------------
     # Frequency Domain
     # -------------------------------------------------------------------------
@@ -907,11 +1381,13 @@ class AcousticDatabaseFFT(AcousticDatabase):
         '''O(B · M)'''
         return np.angle(fft_)
 
-    def _phase_delay(self, phase_, freq): 
+    @staticmethod
+    def _phase_delay(phase_, freq): 
         '''O(B · M)'''
         return phase_ / freq
 
-    def _group_delay(self, phase_, freq): 
+    @staticmethod
+    def _group_delay(phase_, freq): 
         '''O(B · M)
         Parameters
         ----------
@@ -927,7 +1403,10 @@ class AcousticDatabaseFFT(AcousticDatabase):
         '''
         return -np.gradient(np.unwrap(phase_, axis=-1, discont=0.5*np.pi), 2*np.pi*freq, axis=-1)
     
-    def _ifft(self, fft_): return np.fft.irfft(fft_)
+    @staticmethod
+    def _ifft(fft_):
+        '''O(B · N log N)'''
+        return np.fft.irfft(fft_)
     
     def setup_fft_data(self, from_group='preprocessed_data'):
         '''
@@ -940,11 +1419,8 @@ class AcousticDatabaseFFT(AcousticDatabase):
         '''
         with self.open_h5() as h5:
             from_waveform, _ = self.get_check_group(h5, from_group)
-            fft_group = h5.require_group('fft_data')
+            dset = h5[from_group].require_dataset('fft_data', shape=from_waveform.shape[:-1] + (from_waveform.shape[-1]//2+1,), dtype='c8', track_order=True)
             
-            dset = fft_group.require_dataset('calculations', shape=from_waveform.shape[:-1] + (from_waveform.shape[-1]//2+1,), dtype='c8', track_order=True)
-            
-            dset.attrs['from_group'] = str(from_waveform)
             dset.attrs['frequencies'] = np.fft.rfftfreq(from_waveform.shape[-1], d=self.parameters['dt']['value'])
             dset.attrs['window'] = self.window.__name__ if self.window is not None else None
             
@@ -961,8 +1437,7 @@ class AcousticDatabaseFFT(AcousticDatabase):
         '''
         with self.open_h5() as h5:
             from_waveform, _ = self.get_check_group(h5, from_group)
-            fft_grp = h5['fft_data']
-            fft_dset = fft_grp['calculations']
+            fft_dset = h5[from_group]['fft_data']
 
             if self.window is not None:
                 window = self.window(from_waveform.shape[-1])
@@ -972,8 +1447,7 @@ class AcousticDatabaseFFT(AcousticDatabase):
                 for idx in tqdm(idxs, desc="Computing FFT", total=math.prod(self.shape[:-1])):
                     fft_dset[*idx] = self._fft(from_waveform[*idx])
                 
-
-    def get_fft_data(self, idx, h5):
+    def get_fft_data(self, idx, h5, from_group='preprocessed_data'):
         '''Get the values as the full spectrum, not just real portion
         
         Parameters
@@ -987,11 +1461,11 @@ class AcousticDatabaseFFT(AcousticDatabase):
             The FFT data for the given index.
         '''
         try: 
-            return np.stack( [ h5['fft_data']['calculations'][*idx][...,::-1], h5['fft_data']['calculations'][*idx]] )
+            return np.stack( [ h5[from_group]['fft_data'][*idx][...,::-1], h5[from_group]['fft_data']['calculations'][*idx]] )
         except KeyError as e: 
             print(e, 'Run setup_fft_data first'); return None
             
-    def get_fft_frequencies(self, idx, h5):
+    def get_fft_frequencies(self, idx, h5, from_group='preprocessed_data'):
         '''Get the values as the full spectrum, not just real portion
         
         Parameters
@@ -1005,7 +1479,7 @@ class AcousticDatabaseFFT(AcousticDatabase):
             The FFT data for the given index.
         '''
         try: 
-            return np.stack( [ h5['fft_data']['calculations'].attrs['frequencies'][...,::-1], h5['fft_data']['calculations'][*idx].attrs['frequencies'] ] )
+            return np.stack( [ h5[from_group]['fft_data'].attrs['frequencies'][...,::-1], h5[from_group]['fft_data']['calculations'][*idx].attrs['frequencies'] ] )
         except KeyError as e: 
             print(e, 'Run setup_fft_data first'); return None
 
@@ -1023,8 +1497,8 @@ class AcousticDatabaseFFT(AcousticDatabase):
             data = h5[from_group]['waveforms'][:,*idx]
             time_array = h5[from_group]['waveforms'].attrs['time_array']
 
-            fft_data = h5['fft_data']['calculations'][:,*idx]
-            freq = h5['fft_data']['calculations'].attrs['frequencies']/1e6
+            fft_data = h5[from_group]['fft_data'][:,*idx]
+            freq = h5[from_group]['fft_data'].attrs['frequencies']/1e6
             
             for i, dat in enumerate(fft_data):
                 
@@ -1070,7 +1544,8 @@ class AcousticScanDatabase(AcousticDatabase):
     # -------------------------------------------------------------------------
     
     def setup_parameters(self):
-        """Setup the parameters for the acoustic data."""
+        """Setup the parameters for the acoustic data. Gets the parameters from the SQLite database and calculates the shape and length of the dataset. Saves the parameters to the HDF5 file."""
+        print('Setting up parameters in HDF5 dataset...')
         self.parameters = self.get_sqlite_parameters()
         self.parameters['shape'] = (
             len(self.parameters["waveform_labels"]),
@@ -1084,39 +1559,68 @@ class AcousticScanDatabase(AcousticDatabase):
         
         self.save_parameters()
 
-    def sqlite_to_h5(self): # TODO: test
-        """Convert the SQLite database to an HDF5 file."""
+    def sqlite_to_h5(self): 
+        """Convert the SQLite database to an HDF5 file.
+        This method sets up the parameters, raw dataset, and indexing parameters. 
+        """
         self.setup_parameters()
-        
-        keys = ['collection_idx', 'time_collected']
-        values = (self.sqlite_database.fetch_column(column) for column in ('collection_index', 'time_collected'))
-        shapes = [self.shape[1:3], self.shape[1:3]]
-        # TODO: add cases for if there is offset, gain and autorange
-        
+
         self.setup_raw_dataset()
         self.fill_raw_dataset(self.idx_sqlite_data_generator())
         
-        self.write_indexed_parameter(keys, values, shapes)
+        self.write_indexed_parameters()
         
         print(f'\tFinished')
 
     def idx_sqlite_data_generator(self):
+        '''Generate indexed data from the SQLite database. 
+        This method yields tuples of indices and corresponding waveform data for each waveform label, X coordinate, and Z coordinate. 
+        The indices are in the format (waveform_index, x_index, z_index), and the waveform data is fetched from the SQLite database using the fetch_waveform method.
+        '''
         for w,waveform in enumerate(self.parameters['waveform_labels']):
             for x in range(self.shape[1]):
                 for z in range(self.shape[2]):
                     yield (w,x,z), self.sqlite_database.fetch_waveform(waveform, x+z*self.shape[1])
 
     def w_x_z_generator(self):
+        '''Generate indices for waveform, X coordinate, and Z coordinate.
+        This method yields tuples of indices for each waveform label, X coordinate, and Z coordinate.
+        The indices are in the format (waveform_index, x_index, z_index).
+        '''
         for w in range(len(self.parameters['waveform_labels'])):
             for x in range(self.shape[1]):
                 for z in range(self.shape[2]):
                     yield (w,x,z)
 
     # -------------------------------------------------------------------------
+    # Indexing
+    # -------------------------------------------------------------------------
+    
+    def write_indexed_parameters(self, keys=['collection_index', 'time_collected', 'X', 'Z']):
+        """Write indexed parameters to the HDF5 file. Calls setup and fill functions with specific indexer.
+
+        Parameters
+        ----------
+        keys : list[str]
+            List of parameter names to write.
+        values : list[np.ndarray]
+            List of parameter values to write.
+        shapes : list[tuple]
+            List of shapes for each parameter.
+        """
+        print(f'Writing indexed parameters for: {keys}')
+        values = (self.sqlite_database.fetch_column(column) for column in (*keys,))
+        shapes=[self.shape[1:3], self.shape[1:3], self.shape[1:3], self.shape[1:3]] # TODO better way to do this? shapes should be based on the length of the values, but we don't know that until we fetch them.
+        # TODO: add cases for if there is offset, gain and autorange 
+        
+        self.setup_indexed_parameters(keys, shapes)
+        self.fill_indexed_parameter(keys, values, shapes)
+    
+    # -------------------------------------------------------------------------
     # preprocessing
     # -------------------------------------------------------------------------
     
-    def write_preprocessed_data(self, **kwargs): # TODO: implement shift/crop waveform based on first arrival time
+    def write_preprocessed_data(self, **kwargs):
         '''Write preprocessed data to the HDF5 file.
 
         Parameters
@@ -1129,6 +1633,35 @@ class AcousticScanDatabase(AcousticDatabase):
         self.fill_preprocessed_data(self.w_x_z_generator() )
         print('\tFinished')
     
+    
+    # -------------------------------------------------------------------------
+    # basic analysis
+    # -------------------------------------------------------------------------
+    
+    def write_tof_data(self, from_group='preprocessed_data', threshold_fraction=0.1):
+        """Write time of flight data to the HDF5 file. Calls setup and fill functions with specific indexer."""
+        self.setup_tof_data(from_group=from_group, threshold_fraction=threshold_fraction)
+        self.fill_tof_data(self.w_x_z_generator(), from_group=from_group)
+        print('\tFinished')
+        
+    def write_amplitude_data(self, from_group='preprocessed_data', crop=None):
+        """Write amplitude data to the HDF5 file. Calls setup and fill functions with specific indexer."""
+        self.setup_amplitude_data(from_group, crop)
+        self.fill_amplitude_data(self.w_x_z_generator(), from_group, crop)
+        print('\tFinished')    
+
+    def write_autocorrelation_data(self, from_group='preprocessed_data', mode='full'):
+        """Write autocorrelation data to the HDF5 file. Calls setup and fill functions with specific indexer."""
+        self.setup_autocorrelation_data(from_group, mode)
+        self.fill_autocorrelation_data(self.w_x_z_generator(), from_group, mode)
+        print('\tFinished')  
+        
+    def write_xcorrelation_data(self, mother_waveform, mother_time_array, from_group='preprocessed_data', mode='same'):
+        """Write cross-correlation data to the HDF5 file. Calls setup and fill functions with specific indexer."""
+        self.setup_xcorrelation_data(mother_waveform, mother_time_array, from_group, mode)
+        self.fill_xcorrelation_data(self.w_x_z_generator(), from_group, mode)
+        print('\tFinished')  
+ 
     # -------------------------------------------------------------------------
     # alignment
     # -------------------------------------------------------------------------
@@ -1150,22 +1683,68 @@ class AcousticScanDatabase(AcousticDatabase):
     # basic viz
     # -------------------------------------------------------------------------
 
-    def view_mean_img_plot(self, from_group = 'preprocessed_data'): #TODO: check
-        fig, ax = plt.subplots(1+self.shape[0], 1)
+    def view_img_plot(self, idx, from_group = 'preprocessed_data', from_dataset = 'waveforms'): #TODO: check
+        '''View the image plot for a specific index.
+
+        Parameters
+        ----------
+        idx : int
+            The index of the data to view. Excludes the waveform axis, so it should be a tuple of (x_index, z_index, y_index).
+        from_group : str, optional
+            The group in the HDF5 file from which to retrieve the data.
+        '''
+        fig, ax = plt.subplots(1+self.shape[0], 1, figsize=(6, 2*(1+self.shape[0])))
         ax = ax.flatten()
         with self.open_h5() as h5:
-            data = h5[from_group]['waveforms']
+            data = h5[from_group][from_dataset]
+            time_array = h5[from_group]['waveforms'].attrs['time_array']/1e3
             for i, dat in enumerate(data):
-                a = ax[i].imshow(abs(dat).max(axis=(2)).T,)
+                a = ax[i].imshow(abs(dat[...,idx[-1]]).T,)
                 plt.colorbar(a, ax=ax[i], label='Ampl. (mV)')
                 ax[i].set_title(self.parameters['waveform_labels'][i])
-                ax[-1].plot(data.attrs['time_array'], dat.mean(axis=(0,1)), label=self.parameters['waveform_labels'][i])
-            ax[-1].legend()
-        fig.suptitle('pixel wise abs. max. of image and spectrum of processed data')
+                ax[i].plot(idx[0], idx[1], 'ro', markersize=5)
+                
+                ax[-1].plot(time_array, dat[*idx[:-1]], label=self.parameters['waveform_labels'][i])
+                ax[-1].axvline(x=time_array[idx[-1]], color='r', linestyle='--', linewidth=1)
+                ax[-1].set_xlabel('Time (us)')
+                ax[-1].set_ylabel('Ampl. (mV)')
+            ax[-1].legend(loc='upper center', bbox_to_anchor=(0.5, -0.5), ncol=2, borderaxespad=0.)
+        fig.suptitle('t=({} us), x,z=({},{} mm), {} from {}'.format(time_array[idx[-1]], idx[0], idx[1], from_dataset, from_group))
         fig.tight_layout()
         fig.show()
 
+    def amplitude_tof_plot(self, idx=None, from_group='preprocessed_data'): #TODO: check
+        '''View the image plot for a specific index.
 
+        Parameters
+        ----------
+        idx : int
+            The index of the data to view. Excludes the waveform axis, so it should be a tuple of (x_index, z_index, y_index).
+        from_group : str, optional
+            The group in the HDF5 file from which to retrieve the data.
+        '''
+        fig, ax = plt.subplots(self.shape[0], 2, figsize=(self.shape[0]*4, 3))
+        with self.open_h5() as h5:
+            tof =  h5[from_group]['tof']
+            amplitude =  h5[from_group]['amplitude']
+            for i, (tof, amp) in enumerate(zip(tof, amplitude)):
+                a = ax[i,0].imshow(1e-3*tof.T,)
+                plt.colorbar(a, ax=ax[i,0], label='ToF (us)')
+                ax[i,0].set_title(self.parameters['waveform_labels'][i])
+                
+                a = ax[i,1].imshow(amp.T,)
+                plt.colorbar(a, ax=ax[i,1], label='Ampl. (mV)')
+                ax[i,1].set_title(self.parameters['waveform_labels'][i])
+            
+            if idx is not None:
+                for a in ax.flatten():
+                    a.plot(idx[0], idx[1], 'ro', markersize=5)
+            
+        fig.suptitle('Tof and hilbert envelope amplitude of {}'.format(from_group))
+        fig.tight_layout()
+        fig.show()
+    
+     
 class AcousticScanDatabaseFFT(AcousticDatabaseFFT, AcousticScanDatabase):
     """Acoustics database subclass for 2D scan experiments (collection_index <-> X,Z coordinates) with FFT preprocessing."""
     def __init__(self, **kwargs):
@@ -1175,7 +1754,7 @@ class AcousticScanDatabaseFFT(AcousticDatabaseFFT, AcousticScanDatabase):
     # FFT
     # -------------------------------------------------------------------------
     
-    def write_fft_data(self, **kwargs): # TODO: implement shift/crop waveform based on first arrival time
+    def write_fft_data(self, from_group, **kwargs): 
         '''Write preprocessed data to the HDF5 file.
 
         Parameters
@@ -1184,8 +1763,8 @@ class AcousticScanDatabaseFFT(AcousticDatabaseFFT, AcousticScanDatabase):
             Parameters passed to :meth:`setup_preprocessed_data`. See that
             method for the available preprocessing options.
         '''
-        self.setup_fft_data(**kwargs)
-        self.fill_fft_data(self.w_x_z_generator(), **kwargs )
+        self.setup_fft_data(from_group=from_group, **kwargs)
+        self.fill_fft_data(self.w_x_z_generator(), from_group = from_group,**kwargs )
         print('\tFinished')
 
 

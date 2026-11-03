@@ -880,7 +880,6 @@ def plot_waveforms(t, waveforms, envelopes=None, labels=None, ax=None,
 
     if ax is None: _, ax = plt.subplots(figsize=(max_figwidth, 3), dpi=100)
 
-    
     for i in range(len(waveforms)):
         try: ax.plot(t*1e6, waveforms[i], label=labels[i])
         except: ax.plot(t*1e6, waveforms[i])
