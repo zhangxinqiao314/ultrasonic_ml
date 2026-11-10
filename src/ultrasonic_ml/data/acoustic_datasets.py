@@ -20,6 +20,8 @@ from ..utils import profile, NumpyEncoder
 
 import matplotlib.pyplot as plt
 
+# TODO: add methods for tracking indices when filling raw data for real time visualization
+
 class AcousticSQlite: 
     """Base class for SQLite acoustics data and analysis."""
 
@@ -549,7 +551,12 @@ class AcousticDatabase:
             The tab spacing for the schema print, by default ''.
         '''
         for name, obj in h5.items():
-            print(f"{tab}|--{obj}")
+            size_kb = 0.0
+            if hasattr(obj, 'id') and hasattr(obj.id, 'get_storage_size'):
+                size_kb = obj.id.get_storage_size() / (1024 * 1024)  # Convert bytes to MB
+                print(f"{tab}|--{obj} [{size_kb:.2f} MB]")
+            else:
+                print(f"{tab}|--{obj}")
             if isinstance(obj, h5py.Group):
                 self._print_schema(obj, tab + '|  ')
                 
@@ -985,283 +992,7 @@ class AcousticDatabase:
         raise NotImplementedError
     
     # -------------------------------------------------------------------------
-    # Basic Analysis
-    # -------------------------------------------------------------------------
-    
-    @staticmethod
-    def _tof_idx(hilbert, threshold_fraction=0.1):
-        '''
-        Calculate the time of flight based on the hilbert envelope of the waveform and a threshold fraction of the max.
-        
-        Parameters:
-        -----------
-        hilbert: np.ndarray
-            The 1D analytic signal (Hilbert transform) of the waveform.
-        threshold_fraction: float
-            The fraction of the maximum value to use as the threshold for detecting the peak.
-
-        Returns:
-        --------
-        np.ndarray
-            The time of flight for each waveform.
-        '''
-        threshold_ = hilbert.max()*threshold_fraction
-        return int(np.argmax(hilbert > threshold_))
-      
-    def setup_tof_data(self, from_group='preprocessed_data', threshold_fraction=0.1):
-        '''
-        Set up the group storing waveforms aligned by first breakfor the dataset.
-        
-        Parameters
-        ----------
-        from_group : str
-            The name of the group from which to read the waveforms to align.
-        threshold : float
-            The fraction of the maximum value to use as the threshold for detecting the peak.
-        '''
-        
-        with self.open_h5() as h5:
-            _,hilbert = self.get_check_group(h5, from_group)
-            dset = h5[from_group].require_dataset('tof', shape=hilbert.shape[:-1], dtype='f4', track_order=True)
-            dset.attrs['threshold_fraction'] = threshold_fraction
-            dset.attrs['from_group'] = from_group
-            
-    def fill_tof_data(self, idxs: Iterator[tuple], from_group='preprocessed_data') -> None:
-        """Align the first break of the waveforms in the dataset and write to new dataset
-
-        Parameters
-        ----------
-        idxs : Iterator[tuple]
-            An iterator of tuples containing indices to span all but first and last axis.
-        from_group : str
-            The name of the group from which to read the waveforms to align.
-        """          
-        with self.open_h5() as h5:
-            threshold_fraction = h5[from_group]['tof'].attrs['threshold_fraction']
-            hilbert = h5[from_group]['hilbert']
-            time_array = h5[from_group]['waveforms'].attrs['time_array']
-            tof_dset = h5[from_group]['tof']
-            
-            for idx in tqdm(idxs, desc="Calculating ToF", total=math.prod(self.shape[:-1])):
-                tof_idx = self._tof_idx(hilbert[*idx], threshold_fraction=threshold_fraction)
-                tof_dset[*idx] = time_array[tof_idx]
-    
-    def write_tof_data(self):
-        """Write time of flight data to the HDF5 file. Calls setup and fill functions with specific indexer."""
-        raise NotImplementedError
-        
-        
-    @staticmethod
-    def _amplitude(hilbert, crop=None):
-            '''
-            Calculate the amplitude of the hilbert envelope of the waveform. Optionally crop the hilbert signal before calculating the amplitude.
-            
-            Parameters:
-            -----------
-            hilbert: np.ndarray
-                The 1D analytic signal (Hilbert transform) of the waveform.
-            crop: tuple
-                The start and end indices for cropping the hilbert signal.
-    
-            Returns:
-            --------
-            np.ndarray
-                The amplitude of the hilbert envelope for each waveform.
-            '''
-            if crop is not None: hilbert = hilbert[crop[0]:crop[1]]
-            return (hilbert.max())
-             
-    def setup_amplitude_data(self, from_group='preprocessed_data', crop=None):
-        '''
-        Set up the group storing waveforms aligned by first breakfor the dataset.
-        
-        Parameters
-        ----------
-        from_group : str
-            The name of the group from which to read the waveforms to align.
-        crop : tuple
-            The start and end indices for cropping the hilbert signal before calculating the amplitude.
-        '''
-        with self.open_h5() as h5:
-            _,hilbert = self.get_check_group(h5, from_group)
-            h5[from_group].require_dataset('amplitude', shape=hilbert.shape[:-1], dtype='f4', track_order=True)
-            if crop is not None: h5[from_group]['amplitude'].attrs['crop'] = crop    
-            
-    def fill_amplitude_data(self, idxs: Iterator[tuple], from_group='preprocessed_data', crop=None) -> None:
-        """Align the first break of the waveforms in the dataset and write to new dataset
-
-        Parameters
-        ----------
-        idxs : Iterator[tuple]
-            An iterator of tuples containing indices to span all but first and last axis.
-        from_group : str
-            The name of the group from which to read the waveforms to align.
-        crop : tuple
-            The start and end indices for cropping the hilbert signal before calculating the amplitude.
-        """          
-        with self.open_h5() as h5:
-            hilbert = h5[from_group]['hilbert']
-            amplitude_dset = h5[from_group]['amplitude']
-            
-            for idx in tqdm(idxs, desc="Calculating Amplitude", total=math.prod(self.shape[:-1])):
-                amplitude_dset[*idx] = self._amplitude(hilbert[*idx], crop=crop)
-    
-    def write_amplitude_data(self):
-        """Write amplitude data to the HDF5 file. Calls setup and fill functions with specific indexer."""
-        raise NotImplementedError         
-           
-           
-    @staticmethod
-    def _autocorrelate(waveform, mode='full'): # TODO: Edge effects.
-            '''
-            Calculate the autocorrelation of the waveform.
-            
-            Parameters:
-            -----------
-            waveform: np.ndarray
-                The 1D waveform to calculate the autocorrelation of.
-
-            Returns:
-            --------
-            np.ndarray
-                The autocorrelation of the waveform.
-            '''
-            return correlate(waveform, waveform, mode=mode)
-             
-    def setup_autocorrelation_data(self, from_group='preprocessed_data', mode = 'full'):
-        '''
-        Set up the group storing waveforms aligned by first breakfor the dataset.
-        
-        Parameters
-        ----------
-        from_group : str
-            The name of the group from which to read the waveforms to align.
-        mode : str
-            The mode to use for the autocorrelation calculation.
-        crop : tuple
-            The start and end indices for cropping the hilbert signal before calculating the amplitude.
-        '''
-        with self.open_h5() as h5:
-            _,hilbert = self.get_check_group(h5, from_group)
-            auto_corr = h5[from_group].require_dataset('auto_corr', shape=hilbert.shape, dtype='f4', track_order=True)
-            auto_corr.attrs['from_group'] = from_group
-            auto_corr.attrs['mode'] = mode
-            
-    def fill_autocorrelation_data(self, idxs: Iterator[tuple], from_group='preprocessed_data', mode='full') -> None:
-        """Align the first break of the waveforms in the dataset and write to new dataset
-
-        Parameters
-        ----------
-        idxs : Iterator[tuple]
-            An iterator of tuples containing indices to span all but first and last axis.
-        from_group : str
-            The name of the group from which to read the waveforms to align.
-        mode : str
-            The mode to use for the autocorrelation calculation.
-        crop : tuple
-            The start and end indices for cropping the hilbert signal before calculating the amplitude.
-        """          
-        with self.open_h5() as h5:
-            waveforms = h5[from_group]['waveforms']
-            h5[from_group].require_dataset('auto_corr', shape=waveforms.shape, dtype='f4', track_order=True)
-            for idx in tqdm(idxs, desc= "Calculating Autocorrelation", total=math.prod(self.shape[:-1])):
-                h5[from_group]['auto_corr'][*idx] = self._autocorrelate(waveforms[*idx], mode=mode)
-    
-    def write_autocorrelation_data(self, mode):
-        """Write amplitude data to the HDF5 file. Calls setup and fill functions with specific indexer."""
-        raise NotImplementedError         
-            
-             
-    @staticmethod
-    def _xcorr(waveform, mother_waveform, mode='same'):
-            '''
-            Calculate the cross-correlation of the waveform with the mother waveform.
-
-            Parameters:
-            -----------
-            waveform: np.ndarray
-                The 1D waveform to calculate the cross-correlation of.
-            mother_waveform: np.ndarray
-                The 1D mother waveform to cross-correlate with.
-
-            Returns:
-            --------
-            np.ndarray
-                The cross-correlation of the waveform with the mother waveform.
-            '''
-            return correlate(waveform, mother_waveform, mode=mode)
-            
-    def _interp_mother_waveform(self, time_array, mother_waveform, mother_time_array):
-        '''
-        Interpolate the mother waveform to match the time array of the dataset.
-
-        Parameters:
-        -----------
-        mother_waveform: np.ndarray
-            The 1D mother waveform to interpolate.
-
-        Returns:
-        --------
-        (np.ndarray, np.ndarray)
-            The interpolated mother waveform and its corresponding time array.
-        '''
-        time_array = self.parameters['time_array']
-        t_diff = mother_time_array[0]-time_array[0] # so interpolated and true data start at the same time. TODO: phase effect?
-        interp_func = CubicSpline(mother_time_array-t_diff, mother_waveform)  
-        new_waveform = interp_func(time_array[:len(mother_waveform)])      
-        return new_waveform/np.max(np.abs(new_waveform)), time_array[:len(mother_waveform)]
-            
-    def setup_xcorrelation_data(self, mother_waveform, mother_time_array, from_group='preprocessed_data', mode='same'):
-        '''
-        Set up the group storing waveforms aligned by first breakfor the dataset.
-        
-        Parameters
-        ----------
-        from_group : str
-            The name of the group from which to read the waveforms to align.
-        mother_waveform : np.ndarray
-            The mother waveform to use for cross-correlation.
-        mother_time_array : np.ndarray
-            The time array of the mother waveform.
-        mode : str
-            The mode to use for the cross-correlation calculation.
-        crop : tuple
-            The start and end indices for cropping the hilbert signal before calculating the amplitude.
-        '''
-        with self.open_h5() as h5:
-            waveform, hilbert = self.get_check_group(h5, from_group)
-            x_corr = h5[from_group].require_dataset('x_corr', shape=hilbert.shape, dtype='f4', track_order=True)
-            x_corr.attrs['mode'] = mode
-            x_corr.attrs['mother_waveform'], x_corr.attrs['mother_time_array'] = self._interp_mother_waveform(waveform.attrs['time_array'], mother_waveform, mother_time_array)
-            
-    def fill_xcorrelation_data(self, idxs: Iterator[tuple], from_group='preprocessed_data', mode='same') -> None:
-        """Align the first break of the waveforms in the dataset and write to new dataset
-
-        Parameters
-        ----------
-        idxs : Iterator[tuple]
-            An iterator of tuples containing indices to span all but first and last axis.
-        from_group : str
-            The name of the group from which to read the waveforms to align.
-        mode : str
-            The mode to use for the cross-correlation calculation.
-        crop : tuple
-            The start and end indices for cropping the hilbert signal before calculating the amplitude.
-        """          
-        with self.open_h5() as h5:
-            waveforms = h5[from_group]['waveforms']
-            mother_waveform = h5[from_group]['x_corr'].attrs['mother_waveform']
-            mother_time_array = h5[from_group]['x_corr'].attrs['mother_time_array']
-            
-            for idx in tqdm(idxs, desc= "Calculating Cross-correlation", total=math.prod(self.shape[:-1])):
-                h5[from_group]['x_corr'][*idx] = self._xcorr(waveforms[*idx], mother_waveform, mode=mode)
-    
-    def write_xcorrelation_data(self, mode):
-        """Write amplitude data to the HDF5 file. Calls setup and fill functions with specific indexer."""
-        raise NotImplementedError         
-      
-    # -------------------------------------------------------------------------
-    # Alignment - TODO: add feature for phase shift after alignment? to make sure the waves line up?
+    # Alignment - TODO: is it better to implement as phase shift in fft instead?
     # -------------------------------------------------------------------------
     
     @staticmethod
@@ -1332,36 +1063,315 @@ class AcousticDatabase:
                     hilbert_dset[*idx] = hilbert_dset_unrolled[*idx,rollbacks[idx[0]]:new_shape[-1]+rollbacks[idx[0]]]
     
     # -------------------------------------------------------------------------
-    # Basic viz
-    # -------------------------------------------------------------------------  
-                  
-    def view_waveform(self, idx):
-        fig, ax = plt.subplots()
-        with self.open_h5() as h5:
-            data = h5['raw_data']['waveforms']
-            ax.plot(data.attrs['time_array'], data[idx])
-        fig.show()
-  
+    # Basic Analysis
+    # -------------------------------------------------------------------------
+    
+    @staticmethod
+    def _tof_idx(hilbert, threshold_fraction=0.1):
+        '''
+        Calculate the time of flight based on the hilbert envelope of the waveform and a threshold fraction of the max.
+        
+        Parameters:
+        -----------
+        hilbert: np.ndarray
+            The 1D analytic signal (Hilbert transform) of the waveform.
+        threshold_fraction: float
+            The fraction of the maximum value to use as the threshold for detecting the peak.
 
-# Naming convention: AcousticDatabase<AnalysisType>  
-# -- Does not have full functionality, but contains scaffold for interacting with the H5 File and performing analysis
-class AcousticDatabaseFFT(AcousticDatabase):
-    '''Acoustics database subclass for performing FFT analysis on the dataset. The FFT is computed along the last axis of the dataset.
-    Assuming real input, the negative frequencies are mirrored and can be ignored. 
-    When transforming back to time domain, mirror around 0 frequency and perform inverse FFT.
-    '''
-    def __init__(self, window=np.hanning, **kwargs):
-        '''Initialize the AcousticDatabaseFFT class.
+        Returns:
+        --------
+        np.ndarray
+            The time of flight for each waveform.
+        '''
+        threshold_ = hilbert.max()*threshold_fraction
+        return int(np.argmax(hilbert > threshold_))
+      
+    def setup_tof_data(self, from_group='preprocessed_data', threshold_fraction=0.1):
+        '''
+        Set up the group storing waveforms aligned by first breakfor the dataset.
         
         Parameters
         ----------
-        window : callable, optional
-            A window function to apply to the waveform before performing the FFT. Default is np.hanning
-            must be called in format:self.window(<length>) to return a 1D array of length <length>
+        from_group : str
+            The name of the group from which to read the waveforms to align.
+        threshold : float
+            The fraction of the maximum value to use as the threshold for detecting the peak.
         '''
-        super().__init__(**kwargs)
-        self.window = window
         
+        with self.open_h5() as h5:
+            _,hilbert = self.get_check_group(h5, from_group)
+            dset = h5[from_group].require_dataset('tof', shape=hilbert.shape[:-1], dtype='f4', track_order=True)
+            dset.attrs['threshold_fraction'] = threshold_fraction
+            dset.attrs['from_group'] = from_group
+            
+    def fill_tof_data(self, idxs: Iterator[tuple], from_group='preprocessed_data') -> None:
+        """Align the first break of the waveforms in the dataset and write to new dataset
+
+        Parameters
+        ----------
+        idxs : Iterator[tuple]
+            An iterator of tuples containing indices to span all but first and last axis.
+        from_group : str
+            The name of the group from which to read the waveforms to align.
+        """          
+        with self.open_h5() as h5:
+            threshold_fraction = h5[from_group]['tof'].attrs['threshold_fraction']
+            hilbert = h5[from_group]['hilbert']
+            time_array = h5[from_group]['waveforms'].attrs['time_array']
+            tof_dset = h5[from_group]['tof']
+            
+            for idx in tqdm(idxs, desc="Calculating ToF", total=math.prod(self.shape[:-1])):
+                tof_idx = self._tof_idx(hilbert[*idx], threshold_fraction=threshold_fraction)
+                tof_dset[*idx] = time_array[tof_idx]
+    
+    def write_tof_data(self):
+        """Write time of flight data to the HDF5 file. Calls setup and fill functions with specific indexer."""
+        raise NotImplementedError
+           
+    @staticmethod
+    def _amplitude(hilbert, crop=None):
+            '''
+            Calculate the amplitude of the hilbert envelope of the waveform. Optionally crop the hilbert signal before calculating the amplitude.
+            
+            Parameters:
+            -----------
+            hilbert: np.ndarray
+                The 1D analytic signal (Hilbert transform) of the waveform.
+            crop: tuple
+                The start and end indices for cropping the hilbert signal.
+    
+            Returns:
+            --------
+            np.ndarray
+                The amplitude of the hilbert envelope for each waveform.
+            '''
+            if crop is not None: hilbert = hilbert[crop[0]:crop[1]]
+            return (hilbert.max())
+             
+    def setup_amplitude_data(self, from_group='preprocessed_data', crop=None):
+        '''
+        Set up the group storing waveforms aligned by first breakfor the dataset.
+        
+        Parameters
+        ----------
+        from_group : str
+            The name of the group from which to read the waveforms to align.
+        crop : tuple
+            The start and end indices for cropping the hilbert signal before calculating the amplitude.
+        '''
+        with self.open_h5() as h5:
+            _,hilbert = self.get_check_group(h5, from_group)
+            h5[from_group].require_dataset('amplitude', shape=hilbert.shape[:-1], dtype='f4', track_order=True)
+            if crop is not None: h5[from_group]['amplitude'].attrs['crop'] = crop    
+            
+    def fill_amplitude_data(self, idxs: Iterator[tuple], from_group='preprocessed_data', crop=None) -> None:
+        """Align the first break of the waveforms in the dataset and write to new dataset
+
+        Parameters
+        ----------
+        idxs : Iterator[tuple]
+            An iterator of tuples containing indices to span all but first and last axis.
+        from_group : str
+            The name of the group from which to read the waveforms to align.
+        crop : tuple
+            The start and end indices for cropping the hilbert signal before calculating the amplitude.
+        """          
+        with self.open_h5() as h5:
+            hilbert = h5[from_group]['hilbert']
+            amplitude_dset = h5[from_group]['amplitude']
+            
+            for idx in tqdm(idxs, desc="Calculating Amplitude", total=math.prod(self.shape[:-1])):
+                amplitude_dset[*idx] = self._amplitude(hilbert[*idx], crop=crop)
+    
+    def write_amplitude_data(self):
+        """Write amplitude data to the HDF5 file. Calls setup and fill functions with specific indexer."""
+        raise NotImplementedError         
+
+    # -------------------------------------------------------------------------
+    # Correlation Functions
+    # -------------------------------------------------------------------------          
+    
+    @staticmethod
+    def _autocorrelate(waveform, mode='full'): # TODO: Edge effects.
+            '''
+            Calculate the autocorrelation of the waveform.
+            
+            Parameters:
+            -----------
+            waveform: np.ndarray
+                The 1D waveform to calculate the autocorrelation of.
+
+            Returns:
+            --------
+            np.ndarray
+                The autocorrelation of the waveform.
+            '''
+            return correlate(waveform, waveform, mode=mode)
+             
+    def setup_autocorrelation_data(self, from_group='preprocessed_data', mode = 'full'):
+        '''
+        Set up the group storing waveforms aligned by first breakfor the dataset.
+        
+        Parameters
+        ----------
+        from_group : str
+            The name of the group from which to read the waveforms to align.
+        mode : str
+            The mode to use for the autocorrelation calculation.
+        crop : tuple
+            The start and end indices for cropping the hilbert signal before calculating the amplitude.
+        '''
+        with self.open_h5() as h5:
+            _,hilbert = self.get_check_group(h5, from_group)
+            auto_corr = h5[from_group].require_dataset('auto_corr', shape=hilbert.shape, dtype='f4', track_order=True)
+            auto_corr.attrs['from_group'] = from_group
+            auto_corr.attrs['mode'] = mode
+            
+    def fill_autocorrelation_data(self, idxs: Iterator[tuple], from_group='preprocessed_data', mode='full') -> None:
+        """Align the first break of the waveforms in the dataset and write to new dataset
+
+        Parameters
+        ----------
+        idxs : Iterator[tuple]
+            An iterator of tuples containing indices to span all but first and last axis.
+        from_group : str
+            The name of the group from which to read the waveforms to align.
+        mode : str
+            The mode to use for the autocorrelation calculation.
+        crop : tuple
+            The start and end indices for cropping the hilbert signal before calculating the amplitude.
+        """          
+        with self.open_h5() as h5:
+            waveforms = h5[from_group]['waveforms']
+            h5[from_group].require_dataset('auto_corr', shape=waveforms.shape, dtype='f4', track_order=True)
+            for idx in tqdm(idxs, desc= "Calculating Autocorrelation", total=math.prod(self.shape[:-1])):
+                h5[from_group]['auto_corr'][*idx] = self._autocorrelate(waveforms[*idx], mode=mode)
+    
+    def write_autocorrelation_data(self, mode):
+        """Write amplitude data to the HDF5 file. Calls setup and fill functions with specific indexer."""
+        raise NotImplementedError         
+               
+    @staticmethod
+    def _xcorr(waveform, mother_waveform, mode='same'):
+            '''
+            Calculate the cross-correlation of the waveform with the mother waveform.
+
+            Parameters:
+            -----------
+            waveform: np.ndarray
+                The 1D waveform to calculate the cross-correlation of.
+            mother_waveform: np.ndarray
+                The 1D mother waveform to cross-correlate with.
+
+            Returns:
+            --------
+            np.ndarray
+                The cross-correlation of the waveform with the mother waveform.
+            '''
+            return correlate(waveform, mother_waveform, mode=mode)
+            
+    def _setup_mother_waveform(self, mother_db_path, thresh=0.1, **kwargs):
+        """Set up the mother waveform for cross-correlation.
+        TODO: for future, if you want multiple input references
+        
+        Parameters:
+        -----------
+        mother_db_path: str
+            The path to the SQLite database containing the mother waveform.
+        thresh: float
+            The threshold for cropping the mother waveform based on the hilbert envelope.
+        disp: bool
+            Whether to display the mother waveform and its hilbert envelope.
+            
+        Returns:
+        --------
+        tuple
+            A tuple containing the cropped time array, cropped waveform, and transducer frequency (MHz).
+        """
+        mother_db = AcousticSQlite(mother_db_path)
+        mother_waveform = mother_db.fetch_waveform(waveform=mother_db.waveform_columns[0], row=0)
+        mother_time_array = mother_db.fetch_time(row=0)
+        hilbert_ = np.abs(hilbert(mother_waveform))
+        indices = np.where(np.abs(hilbert_) > hilbert_.max()*thresh)[0]
+        max_ind = np.argmax(hilbert_)
+        crop = (2*indices[0]-max_ind, 2*indices[-1]-max_ind)
+        
+        return mother_waveform[crop[0]:crop[1]], mother_time_array[crop[0]:crop[1]], mother_db.parameters['transducerFrequency']
+            
+    def _interp_mother_waveform(self, time_array, mother_waveform, mother_time_array):
+        '''
+        Interpolate the mother waveform to match the time array of the dataset. The starting times are matched
+
+        Parameters:
+        -----------
+        time_array: np.ndarray
+            ...
+        mother_waveform: np.ndarray
+            The 1D mother waveform to interpolate.
+        mother_time_array: np.ndarray
+            ...
+            
+        Returns:
+        --------
+        (np.ndarray, np.ndarray)
+            The interpolated mother waveform and its corresponding time array.
+        '''
+        time_array = self.parameters['time_array']
+        t_diff = mother_time_array[0]-time_array[0] # so interpolated and true data start at the same time. TODO: phase effect?
+        interp_func = CubicSpline(mother_time_array-t_diff, mother_waveform)  
+        new_waveform = interp_func(time_array[:len(mother_waveform)])      
+        return new_waveform/np.max(np.abs(new_waveform)), time_array[:len(mother_waveform)]
+            
+    def setup_xcorrelation_data(self, mother_db_path, from_group='preprocessed_data', mode='same', thresh=0.1, **kwargs):
+        '''
+        Set up the group storing waveforms aligned by first breakfor the dataset.
+        
+        Parameters
+        ----------
+        from_group : str
+            The name of the group from which to read the waveforms to align.
+        mother_waveform : np.ndarray
+            The mother waveform to use for cross-correlation.
+        mother_time_array : np.ndarray
+            The time array of the mother waveform.
+        mode : str
+            The mode to use for the cross-correlation calculation.
+        crop : tuple
+            The start and end indices for cropping the hilbert signal before calculating the amplitude.
+        '''
+        mother_waveform, mother_time_array, mother_frequency = self._setup_mother_waveform(mother_db_path, thresh, **kwargs)
+        with self.open_h5() as h5:
+            waveform, hilbert = self.get_check_group(h5, from_group)
+            x_corr = h5[from_group].require_dataset('x_corr', shape=hilbert.shape, dtype='f4', track_order=True)
+            x_corr.attrs['mode'] = mode
+            x_corr.attrs['mother_waveform'], x_corr.attrs['mother_time_array'] = self._interp_mother_waveform(waveform.attrs['time_array'], mother_waveform, mother_time_array)
+            x_corr.attrs['mother_frequency'] = mother_frequency
+
+    def fill_xcorrelation_data(self, idxs: Iterator[tuple], from_group='preprocessed_data', mode='same') -> None:
+        """Align the first break of the waveforms in the dataset and write to new dataset
+
+        Parameters
+        ----------
+        idxs : Iterator[tuple]
+            An iterator of tuples containing indices to span all but first and last axis.
+        from_group : str
+            The name of the group from which to read the waveforms to align.
+        mode : str
+            The mode to use for the cross-correlation calculation.
+        crop : tuple
+            The start and end indices for cropping the hilbert signal before calculating the amplitude.
+        """          
+        with self.open_h5() as h5:
+            waveforms = h5[from_group]['waveforms']
+            mother_waveform = h5[from_group]['x_corr'].attrs['mother_waveform']
+            
+            for idx in tqdm(idxs, desc= "Calculating Cross-correlation", total=math.prod(self.shape[:-1])):
+                h5[from_group]['x_corr'][*idx] = self._xcorr(waveforms[*idx], mother_waveform, mode=mode)
+    
+    def write_xcorrelation_data(self, mother_db_path: str, mode: str = 'same', thresh: float = 0.1, **kwargs):
+        """Write amplitude data to the HDF5 file. Calls setup and fill functions with specific indexer."""
+        raise NotImplementedError         
+
     # -------------------------------------------------------------------------
     # Frequency Domain
     # -------------------------------------------------------------------------
@@ -1408,7 +1418,7 @@ class AcousticDatabaseFFT(AcousticDatabase):
         '''O(B · N log N)'''
         return np.fft.irfft(fft_)
     
-    def setup_fft_data(self, from_group='preprocessed_data'):
+    def setup_fft_data(self, from_group='preprocessed_data', window=np.hanning):
         '''
         Set up the group and dataset storing waveforms in the frequency domain for the dataset.
 
@@ -1422,9 +1432,9 @@ class AcousticDatabaseFFT(AcousticDatabase):
             dset = h5[from_group].require_dataset('fft_data', shape=from_waveform.shape[:-1] + (from_waveform.shape[-1]//2+1,), dtype='c8', track_order=True)
             
             dset.attrs['frequencies'] = np.fft.rfftfreq(from_waveform.shape[-1], d=self.parameters['dt']['value'])
-            dset.attrs['window'] = self.window.__name__ if self.window is not None else None
+            dset.attrs['window'] = window.__name__ if window is not None else None
             
-    def fill_fft_data(self, idxs: Iterator[tuple], from_group='preprocessed_data') -> None:
+    def fill_fft_data(self, idxs: Iterator[tuple], from_group='preprocessed_data', window=np.hanning) -> None:
         '''
         Set up the group storing waveforms in the frequency domain for the dataset.
 
@@ -1484,6 +1494,16 @@ class AcousticDatabaseFFT(AcousticDatabase):
             print(e, 'Run setup_fft_data first'); return None
 
     # -------------------------------------------------------------------------
+    # Wavelet Analysis
+    # -------------------------------------------------------------------------          
+    
+    # Complex Morlet CWT - Time-dependent amplitude and phase changes
+    
+    # Cross-wavelet transform - Common frequency content and relative phase between reference and measurement
+    
+    # Wavelet coherence - Frequency-dependent correlation between signal
+            
+    # -------------------------------------------------------------------------
     # basic viz
     # -------------------------------------------------------------------------
 
@@ -1528,6 +1548,23 @@ class AcousticDatabaseFFT(AcousticDatabase):
                 
         fig.tight_layout()
         plt.show()
+
+    def view_waveform(self, idx):
+        fig, ax = plt.subplots()
+        with self.open_h5() as h5:
+            data = h5['raw_data']['waveforms']
+            ax.plot(data.attrs['time_array'], data[idx])
+        fig.show()
+       
+    def view_mother_waveform(self, from_group='preprocessed_data'):
+        fig, ax = plt.subplots(figsize=(4,3))
+        with self.open_h5() as h5:
+            mother_waveform = h5[from_group]['x_corr'].attrs['mother_waveform']
+            mother_time_array = h5[from_group]['x_corr'].attrs['mother_time_array']
+            mother_frequency = h5[from_group]['x_corr'].attrs['mother_frequency']
+            ax.plot(mother_time_array, mother_waveform)
+            ax.set(xlabel='Time (ns)', ylabel='Voltage (mV)', title=f'Mother Waveform, {mother_frequency} MHz');
+        fig.show()
 
 
 # Naming convention:  Acoustic<ExperimentType>Database 
@@ -1632,35 +1669,6 @@ class AcousticScanDatabase(AcousticDatabase):
         self.setup_preprocessed_data(**kwargs)
         self.fill_preprocessed_data(self.w_x_z_generator() )
         print('\tFinished')
-    
-    
-    # -------------------------------------------------------------------------
-    # basic analysis
-    # -------------------------------------------------------------------------
-    
-    def write_tof_data(self, from_group='preprocessed_data', threshold_fraction=0.1):
-        """Write time of flight data to the HDF5 file. Calls setup and fill functions with specific indexer."""
-        self.setup_tof_data(from_group=from_group, threshold_fraction=threshold_fraction)
-        self.fill_tof_data(self.w_x_z_generator(), from_group=from_group)
-        print('\tFinished')
-        
-    def write_amplitude_data(self, from_group='preprocessed_data', crop=None):
-        """Write amplitude data to the HDF5 file. Calls setup and fill functions with specific indexer."""
-        self.setup_amplitude_data(from_group, crop)
-        self.fill_amplitude_data(self.w_x_z_generator(), from_group, crop)
-        print('\tFinished')    
-
-    def write_autocorrelation_data(self, from_group='preprocessed_data', mode='full'):
-        """Write autocorrelation data to the HDF5 file. Calls setup and fill functions with specific indexer."""
-        self.setup_autocorrelation_data(from_group, mode)
-        self.fill_autocorrelation_data(self.w_x_z_generator(), from_group, mode)
-        print('\tFinished')  
-        
-    def write_xcorrelation_data(self, mother_waveform, mother_time_array, from_group='preprocessed_data', mode='same'):
-        """Write cross-correlation data to the HDF5 file. Calls setup and fill functions with specific indexer."""
-        self.setup_xcorrelation_data(mother_waveform, mother_time_array, from_group, mode)
-        self.fill_xcorrelation_data(self.w_x_z_generator(), from_group, mode)
-        print('\tFinished')  
  
     # -------------------------------------------------------------------------
     # alignment
@@ -1678,7 +1686,39 @@ class AcousticScanDatabase(AcousticDatabase):
         self.setup_first_break_aligned_data(**kwargs)
         self.fill_first_break_aligned_data(self.w_x_z_generator(), **kwargs)
         print('\tFinished')
+       
+    # -------------------------------------------------------------------------
+    # basic analysis
+    # -------------------------------------------------------------------------
     
+    def write_tof_data(self, from_group='preprocessed_data', threshold_fraction=0.1):
+        """Write time of flight data to the HDF5 file. Calls setup and fill functions with specific indexer."""
+        self.setup_tof_data(from_group=from_group, threshold_fraction=threshold_fraction)
+        self.fill_tof_data(self.w_x_z_generator(), from_group=from_group)
+        print('\tFinished')
+        
+    def write_amplitude_data(self, from_group='preprocessed_data', crop=None):
+        """Write amplitude data to the HDF5 file. Calls setup and fill functions with specific indexer."""
+        self.setup_amplitude_data(from_group, crop)
+        self.fill_amplitude_data(self.w_x_z_generator(), from_group, crop)
+        print('\tFinished')    
+    
+    # -------------------------------------------------------------------------
+    # basic analysis
+    # -------------------------------------------------------------------------
+    
+    def write_autocorrelation_data(self, from_group='preprocessed_data', mode='full'):
+        """Write autocorrelation data to the HDF5 file. Calls setup and fill functions with specific indexer."""
+        self.setup_autocorrelation_data(from_group, mode)
+        self.fill_autocorrelation_data(self.w_x_z_generator(), from_group, mode)
+        print('\tFinished')  
+        
+    def write_xcorrelation_data(self, mother_db_path: str, from_group='preprocessed_data', mode='same'):
+        """Write cross-correlation data to the HDF5 file. Calls setup and fill functions with specific indexer."""
+        self.setup_xcorrelation_data(mother_db_path, from_group, mode)
+        self.fill_xcorrelation_data(self.w_x_z_generator(), from_group, mode)
+        print('\tFinished')  
+   
     # -------------------------------------------------------------------------
     # basic viz
     # -------------------------------------------------------------------------

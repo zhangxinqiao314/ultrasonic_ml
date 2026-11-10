@@ -12,7 +12,7 @@ from bokeh.models import CustomJSTickFormatter
 
 
 class AcousticViewer(param.Parameterized):
-    # put tracked parameters here
+    # Put tracked parameters here
 
     # -------------------------------------------------------------------------
     # Magic Methods
@@ -92,7 +92,7 @@ class AcousticViewer(param.Parameterized):
             
             
 class AcousticScanViewer(AcousticViewer):
-    dataset = param.Selector(default='hilbert', objects=['hilbert', 'waveforms'])
+    dataset = param.Selector(default='hilbert', objects=['hilbert', 'waveforms', ])
     current_x = param.Integer(default=0)
     current_z = param.Integer(default=0)
     current_y = param.Integer(default=0)
