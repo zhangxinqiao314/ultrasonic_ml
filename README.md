@@ -3,7 +3,16 @@
 gathering code and notebooks for ultrasonic analysis
 
 ## Installation
+
 In command line:
+
+Recommendation: install anaconda and create a new environment in command line. Change to this new environment for working in notebooks and installing requiements.
+```
+conda create --name ultrasound
+conda activate ultrasound
+```
+
+Clone repo:
 ```
 git clone -b hdf5_format https://github.com/changbatterygroup/ultrasonic_ml.git
 ```
@@ -32,7 +41,7 @@ ultrasonic_ml/
 |-- .gitignore
 |
 |-- Notebooks/
-|   |-- fft/
+|   |-- SAM_examples/
 |   |   |-- index.rst (outline what you want to display for sphinx documentation)
 |   |   |-- notebooks and affiliated docs
 |   |   ...

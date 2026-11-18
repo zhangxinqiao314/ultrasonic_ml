@@ -109,7 +109,7 @@ def stitch_interp_normalize_pickles(pickleFiles, interp=True, saveName='combined
                 combined_data[idx]['exp_idx'] = i
                 for key in v.keys():
                     if 'voltage' in key:
-                        if interp: # TODO: need to recheck
+                        if interp: 
                             combined_data[idx]['time'] = np.linspace(start, end, num_points)
                             combined_data[idx][key] = np.interp(combined_data[idx]['time'], v['time'], v[key])                
                         else: 
@@ -505,7 +505,7 @@ def phase_group_delay_worker(x, f_):
     dict
         A dictionary containing the phase and group delay
     '''
-    phase = np.unwrap(np.angle(x)) #TODO: why unwrap with period of pi an not 2pi?
+    phase = np.unwrap(np.angle(x))
     group_delay = -np.gradient(phase, f_) / 2/np.pi
     return {
         "phase": phase,
@@ -542,7 +542,6 @@ def calculate_phase_group_delay_features(merged_df, overwrite=False, save_to_pic
 
 
     
-# TODO: test
 def detrend_linear(df, keys=None):
     """
     Detrend amplitude and ToF data using polynomial and logarithmic fits.
@@ -562,7 +561,6 @@ def detrend_linear(df, keys=None):
         fit = a * df['time_collected'] + b
         df[k] -= fit
 
-# TODO: test
 def detrend_log(df, amplitude_keys=None, tof_keys=None):
     """
     Detrend amplitude and ToF data using polynomial and logarithmic fits.
@@ -636,7 +634,6 @@ def calculate_avgs_by_T(merged_filtered_df, temps, crop=None, polyfit_degree=1,
 
 
 ### plotting functions
-# TODO
 def plot_detrended_amplitude(df,):
     """
     Plot the detrended amplitude of the merged dataframe.
@@ -670,7 +667,6 @@ def plot_detrended_amplitude(df,):
     plt.tight_layout()
     plt.show()
 
-# TODO
 def plot_detrended_tof(merged_df):
     """
     Plot the detrended ToF of the merged dataframe.

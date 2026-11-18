@@ -1,480 +1,32 @@
+import sys
 import os 
 os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE" # Disable HDF5 file locking, TODO: check if this is risky
 
-import io
 import json
-import sqlite3
-from pathlib import Path
 from typing import Any, Iterator    
 import h5py
 import pprint
+from tqdm import tqdm
 
 import math
 import numpy as np  
-from scipy.signal import butter, sosfiltfilt, hilbert, find_peaks, correlate
+from scipy.signal import butter, sosfiltfilt, hilbert, find_peaks, correlate, correlation_lags
 from scipy.interpolate import CubicSpline
-
-from tqdm import tqdm
-
-from ..utils import profile, NumpyEncoder 
 
 import matplotlib.pyplot as plt
 
-# TODO: add methods for tracking indices when filling raw data for real time visualization
+from ..utils import NumpyEncoder
+from .sqlite_datasets import AcousticSQlite
 
-class AcousticSQlite: 
-    """Base class for SQLite acoustics data and analysis."""
+import pywt
 
-    def __init__(self, path: str | Path) -> None:
-        """Initialize the AcousticsDatabase.
-
-        Parameters
-        ----------
-        path : str | Path
-            The path to the SQLite database file.
-        """
-        
-        print("Establishing SQLite connection to database...")
-        self.types_dict = {
-            "REAL": float,
-            "TEXT": str,
-            "INTEGER": int,
-            "BLOB": bytes,
-            "NULL": type(None),
-        }
-        self.path = path
-        self.connection: sqlite3.Connection | None = None
-        self.cursor: sqlite3.Cursor | None = None
-        self.acoustics_table = "acoustics"
-        self.parameters_table = "parameters"
-
-        self.connect()
-        # print('setting parameters')
-        self.waveform_columns = self.get_waveform_columns()
-        self.parameters = self.get_sqlite_parameters()
-        self.initialize_frequency_parameters()
-
-    # -------------------------------------------------------------------------
-    # Database
-    # -------------------------------------------------------------------------
-
-    def __enter__(self) -> AcousticsSQlite:
-        """Enter the context manager.
-
-        Returns
-        -------
-        AcousticsDatabase
-            The AcousticsDatabase instance.
-        """
-        
-        return self
-
-    def __exit__(self, *args: Any) -> None:
-        """Exit the context manager and close the database connection.
-
-        Parameters
-        ----------
-        *args : Any
-            The exception type, value, and traceback.
-        """
-        self.close()
-
-    def __len__(self) -> int:
-        """Get the number of acquisitions in the acoustics table.
-
-        Returns
-        -------
-        int
-            The number of acquisitions.
-        """
-        return self.get_acquisition_count()
-
-    def print_schema(self) -> None:
-        """Pretty-print the database's table and column structure.
-        """
-        tables = self.get_tables()
-        for i, table in enumerate(tables):
-            is_last_table = i == len(tables) - 1
-            print(f"{'└── ' if is_last_table else '├── '}{table}")
-
-            columns = self.get_columns(table)
-            prefix = "    " if is_last_table else "│   "
-            for j, column in enumerate(columns):
-                is_last_column = j == len(columns) - 1
-                print(f"{prefix}{'└── ' if is_last_column else '├── '}{column}")
-
-    def connect(self) -> None:
-        """Connect to the SQLite database.
-        """
-        self.connection = sqlite3.connect(self.path, detect_types=sqlite3.PARSE_DECLTYPES)
-        self.cursor = self.connection.cursor()
-
-    def close(self) -> None:
-        """Close the SQLite database connection.
-        """
-        if self.connection:
-            self.connection.close()
-        self.connection = self.cursor = None
-
-    def get_tables(self) -> list[str]:
-        """Get the list of tables in the SQLite database.
-
-        Returns
-        -------
-        list[str]
-            A list of table names.
-        """
-        rows = self.connection.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
-        return [r[0] for r in rows]
-
-    def get_columns(self, table: str) -> list[str]:
-        """Get the list of columns in a table.
-
-        Parameters
-        ----------
-        table : str
-            The name of the table.
-
-        Returns
-        -------
-        list[str]
-            A list of column names.
-        """
-        rows = self.connection.execute(f"PRAGMA table_info({self._quote(table)})").fetchall()
-        return [r[1] for r in rows]
-
-    def fetch_column(self, column: str, table: str = "acoustics") -> list[Any]:
-        """Fetch all values from a specific column in a table.
-
-        Parameters
-        ----------
-        column : str
-            The name of the column.
-        table : str, optional
-            The name of the table, by default "acoustics".
-
-        Returns
-        -------
-        list[Any]
-            A list of values from the specified column.
-        """
-        self._check_column(table, column)
-        query = f"SELECT {self._quote(column)} FROM {self._quote(table)}"
-        return [r[0] for r in self.connection.execute(query)]
-
-    def fetch_value(self, column: str, row: int, table: str = "acoustics") -> Any:
-        """Fetch a single value from a specific column and row in a table.
-
-        Parameters
-        ----------
-        column : str
-            The name of the column.
-        row : int
-            The row index.
-        table : str, optional
-            The name of the table, by default "acoustics".
-
-        Returns
-        -------
-        Any
-            The value from the specified column and row.
-        """
-        self._check_column(table, column)
-        query = f"SELECT {self._quote(column)} FROM {self._quote(table)} LIMIT 1 OFFSET ?"
-        result = self.connection.execute(query, (row,)).fetchone()
-        if result is None:
-            raise IndexError(f"Row {row} does not exist.")
-        return result[0]
-
-    # -------------------------------------------------------------------------
-    # Parameters
-    # -------------------------------------------------------------------------
-
-    def get_sqlite_parameters(self) -> dict[str, Any]:
-        """Get the parameters from the parameters table.
-
-        Returns
-        -------
-        dict[str, Any]
-            A dictionary of parameters.
-        """
-        columns = self.get_columns(self.parameters_table)
-        if not columns:
-            return {}
-        query = f"SELECT {','.join(map(self._quote, columns))} FROM {self._quote(self.parameters_table)} LIMIT 1"
-        row = self.connection.execute(query).fetchone()
-        return dict(zip(columns, row)) if row else {}
-
-    def initialize_frequency_parameters(self) -> None:
-        """Initialize frequency-related parameters from the database.
-        """
-        self.f = self.parameters.get("transducerFrequency")
-        self.f = float(self.f) * 1e6 if self.f is not None else None
-
-        try:
-            time = self.fetch_time()
-            self.dt = float(np.median(np.diff(time))) * 1e-9
-            self.f_s = 1 / self.dt
-        except (KeyError, ValueError, IndexError):
-            self.dt = self.f_s = None
-
-        self.omega_scaled = self.f * self.dt if self.f is not None and self.dt is not None else None
-
-        values = {"omega_scaled": self.omega_scaled, "dt": self.dt, "f_s": self.f_s}
-        for key, value in values.items():
-            if value is not None:
-                self._add_column(key, self.parameters_table)
-                self._write_parameter(key, value)
-
-        self.parameters.update({k: v for k, v in values.items() if v is not None})
-
-    # -------------------------------------------------------------------------
-    # Raw Waveforms
-    # -------------------------------------------------------------------------
-
-    def store_acoustics_values(self, collection_index: int, column: str, value: Any) -> None:
-        """Store a single value in the acoustics table.
-
-        Parameters
-        ----------
-        collection_index : int
-            The index of the collection.
-        column : str
-            The name of the column to store the value in.
-        value : Any
-            The value to store.
-        """
-        self.store_acoustics_values_batch([collection_index], column, [value])
-
-    def store_acoustics_values_batch(self, collection_index: int, column: str, value: Any) -> None:
-        """Store values in the analysis table.
-
-        Parameters
-        ----------
-        collection_index : int
-            The index of the collection.
-        """
-        if isinstance(value, np.ndarray):
-            value = self.serialize_array(value)
-
-        query = f"""
-            INSERT INTO {self._quote(self.acoustics_table)}
-            (collection_index,{self._quote(column)})
-            VALUES (?,?)
-            ON CONFLICT(collection_index) DO UPDATE SET
-                {self._quote(column)} = excluded.{self._quote(column)}
-        """
-        self.connection.executemany(query, zip(collection_index, value))
-        self.connection.commit()
-
-    def fetch_waveform(self, waveform: str, row: int) -> np.ndarray:
-        """Fetch a waveform from the acoustics table.
-
-        Parameters
-        ----------
-        waveform : str
-            The name of the waveform column.
-        row : int
-            The row index of the acquisition.
-
-        Returns
-        -------
-        np.ndarray
-            The waveform as a NumPy array.
-        """
-        
-        self._check_column('acoustics', waveform)
-        return self.deserialize_array(self.fetch_value(waveform, row))
-
-    def fetch_waveform_batch(self, waveform: str, rows: Any) -> list[np.ndarray]:
-        """Fetch a batch of waveforms from the acoustics table.
-
-        Parameters
-        ----------
-        waveform : str
-            The name of the waveform column.
-        rows : Any
-            An iterable of row indices.
-
-        Returns
-        -------
-        list[np.ndarray]
-            A list of waveforms as NumPy arrays.
-        """
-        return [self.fetch_waveform(waveform, int(row)) for row in rows]
-
-    def get_waveform_columns(self) -> list[str]:
-        """Get the list of waveform columns in the acoustics table.
-
-        Returns
-        -------
-        list[str]
-            A list of waveform column names.
-        """
-        excluded = {"collection_index", "X", "Z", "time", "time_collected", "frequency"}
-        return [c for c in self.get_columns(self.acoustics_table) if c.startswith("voltage") and c not in excluded]
-
-    def fetch_time(self, row: int = 0) -> np.ndarray:
-        """Fetch the time array from the acoustics table.
-
-        Parameters
-        ----------
-        row : int, optional
-            The row index of the acquisition, by default 0.
-
-        Returns
-        -------
-        np.ndarray
-            The time array as a NumPy array.
-        """
-        return self.deserialize_array(self.fetch_value("time", row))
-
-    def get_acquisition_count(self) -> int:
-        """Get the total number of acquisitions in the acoustics table.
-
-        Returns
-        -------
-        int
-            The total number of acquisitions.
-        """
-        
-        query = f"SELECT COUNT(*) FROM {self._quote(self.acoustics_table)}"
-        return int(self.connection.execute(query).fetchone()[0])
-
-    # -------------------------------------------------------------------------
-    # Serialization
-    # -------------------------------------------------------------------------
-
-    @staticmethod
-    def serialize_array(array: np.ndarray) -> bytes:
-        """Serialize a NumPy array to bytes for storage in the SQLite database.
-
-        Parameters
-        ----------
-        array : np.ndarray
-            The NumPy array to serialize.
-
-        Returns
-        -------
-        bytes
-            The serialized byte representation of the array.
-        """
-            
-        buffer = io.BytesIO()
-        np.save(buffer, np.asarray(array), allow_pickle=False)
-        return buffer.getvalue()
-
-    @staticmethod
-    def deserialize_array(blob: Any) -> np.ndarray:
-        """Deserialize bytes from the SQLite database back into a NumPy array.
-
-        Parameters
-        ----------
-        blob : Any
-            The byte representation of the array.
-
-        Returns
-        -------
-        np.ndarray
-            The deserialized NumPy array.
-        """
-            
-        if isinstance(blob, np.ndarray):
-            return blob
-        if isinstance(blob, memoryview):
-            blob = blob.tobytes()
-        if isinstance(blob, bytearray):
-            blob = bytes(blob)
-        if not isinstance(blob, bytes):
-            return np.asarray(blob)
-
-        try:
-            return np.load(io.BytesIO(blob), allow_pickle=False)
-        except (ValueError, EOFError):
-            return np.frombuffer(blob, dtype=np.float32)
-
-    # -------------------------------------------------------------------------
-    # Private helpers
-    # -------------------------------------------------------------------------
-
-    def _delete_column(self, column: str, table: str) -> None:
-        """Delete a column from a table in the SQLite database.
-
-        Parameters
-        ----------
-        column : str
-            The name of the column to delete.
-        table : str
-            The name of the table from which to delete the column.
-        """
-            
-        if column in self.get_columns(table):
-            self.connection.execute(f"ALTER TABLE {self._quote(table)} DROP COLUMN {self._quote(column)}")
-
-    def _add_column(self, column: str, table: str, type: str='REAL') -> None:
-        """Add a new column to the parameters table if it does not already exist.
-
-        Parameters
-        ----------
-        column : str
-            The name of the column to add.
-        """
-            
-        if column not in self.get_columns(table):
-            self.connection.execute(f"ALTER TABLE {self._quote(table)} ADD COLUMN {self._quote(column)} {type}")
-
-    def _write_parameter(self, column: str, value: Any) -> None:
-        """Write a parameter value to the parameters table.
-
-        Parameters
-        ----------
-        column : str
-            The name of the parameter column.
-        value : Any
-            The value to write to the parameter column.
-        """
-            
-        self.connection.execute(f"UPDATE {self._quote(self.parameters_table)} SET {self._quote(column)}=?", (value,))
-        self.connection.commit()
-
-    def _check_column(self, table: str, column: str) -> None:
-        """Check if a column exists in a table.
-
-        Parameters
-        ----------
-        table : str
-            The name of the table.
-        column : str
-            The name of the column.
-
-        Raises
-        ------
-        ValueError
-            If the column does not exist in the table.
-        """
-            
-        if column not in self.get_columns(table): raise ValueError(f"Column '{column}' does not exist in '{table}'")
-
-    @staticmethod
-    def _quote(identifier: str) -> str:
-        """Replace quotes with double quotes in an identifier (table or column name) for use in SQL queries.
-
-        Parameters
-        ----------
-        identifier : str
-            The identifier to quote.
-
-        Returns
-        -------
-        str
-            The quoted identifier.
-        """
-            
-        return '"' + identifier.replace('"', '""') + '"'
-
-
-# TODO: AcousticScanDatabase base class. This does not have real functionality
+# TODO: add method or attribute for tracking indices when filling raw data or tracking sqlite file length
+# TODO: AcousticDatabase class. Base class. This does not have full functionality
 class AcousticDatabase:
+    '''Base class for acoustic scan databases, providing common functionality for handling HDF5 and SQLite data.
+    analytical frequency domain study https://www.sciencedirect.com/science/article/pii/S2352152X22006016
+    '''
+    
     def __init__(self, parent_folder: str, h5_name: str, sqlite_path: str | None = None):
         '''Initialize the AcousticDatabase.
         
@@ -578,17 +130,13 @@ class AcousticDatabase:
     # -------------------------------------------------------------------------
     # Parameters
     # -------------------------------------------------------------------------
-        
-    def print_parameters(self):
-        '''Pretty-print the parameters dictionary with a threshold for large arrays.'''
-        with np.printoptions(threshold=10, edgeitems=2,):
-            # Adjust 'indent' to change tab sizing if needed
-            pprint.pprint(self.parameters, indent=4, compact=True)
             
-    def get_sqlite_parameters(self): # TODO: finish filling these out. Make template a part of docs page. 
+    def get_sqlite_parameters(self): 
+        # TODO: finish filling these out. Use descriptions from Sam's UltrasonicTesting/runUltrasonicExperiment.py, in the sweep branch.
+        # TODO: Make template a part of docs page. 
         '''Get the parameters from the SQLite database and return them as a dictionary with units and descriptions.'''
         # with units and descriptions
-        parameters = { # TODO: fix multiplexer measurments with scanned/changing offsets and gains.
+        parameters = { # TODO: redo filling multiplexer measurments with scanned/changing offsets and gains.
             'experiment': {
                 'value': self.sqlite_database.parameters['experiment'],
                 'description': '''options: 
@@ -744,7 +292,13 @@ class AcousticDatabase:
         parameters['waveform_labels'] = self.sqlite_database.waveform_columns
         
         return parameters
-                  
+     
+    def print_parameters(self):
+        '''Pretty-print the parameters dictionary with a threshold for large arrays.'''
+        with np.printoptions(threshold=10, edgeitems=2,):
+            # Adjust 'indent' to change tab sizing if needed
+            pprint.pprint(self.parameters, indent=4, compact=True)
+                     
     def save_parameters(self):
         '''Save the parameters dictionary to HDF5 file as a JSON string. Create dataset "config_metadata" in the root of the HDF5 file if it does not exist.'''
         with self.open_h5() as h5:
@@ -772,6 +326,7 @@ class AcousticDatabase:
     # -------------------------------------------------------------------------
     # Indexing
     # -------------------------------------------------------------------------
+    
     def setup_indexed_parameters(self, keys, shapes):
         '''Creates the 'indexed_parameters' group in the HDF5 file and sets up datasets for each parameter with the appropriate shape and data type.
         
@@ -819,8 +374,8 @@ class AcousticDatabase:
         '''Hook to generate indexed data from SQLite database. To be used for writing raw data. This method is specific to the shape of the experiment and should be implemented in the child class.'''
         raise NotImplementedError # specific to the child class
     
-    # fill _ with some combination of whatever axis are in the dataset (w_x_z, x_z, w_y, etc.)
-    def _generator(self): 
+    # fill ___ with some combination of whatever axis are in the dataset (w_x_z, x_z, w_y, etc.)
+    def ___generator(self): 
         '''Hook to generate data for filling the raw dataset. This method is specific to the shape of the experiment and should be implemented in the child class.'''
         raise NotImplementedError # specific to the child class
     
@@ -832,12 +387,12 @@ class AcousticDatabase:
         '''Creates the 'raw_data' group in the HDF5 file and sets up the 'waveforms' and 'hilbert' datasets with the appropriate shape and data type. 
         It also saves the time array as an attribute of the 'waveforms' dataset.
         '''
-
         with self.open_h5() as h5:
             grp = h5.require_group('raw_data')
             waveforms_dset = grp.require_dataset('waveforms', shape=self.shape, dtype='f4', track_order=True)
-            grp.require_dataset('hilbert', shape=self.shape, dtype='f4', track_order=True)
+            hilbert_dset = grp.require_dataset('hilbert', shape=self.shape, dtype='c8', track_order=True)
             waveforms_dset.attrs['time_array'] = self.parameters['time_array']
+            hilbert_dset.attrs['time_array'] = self.parameters['time_array']
             
     def fill_raw_dataset(self, idx_data : Iterator[tuple[tuple, np.ndarray]]):
         '''Fill a series of specific locations in the raw data dataset.
@@ -849,11 +404,11 @@ class AcousticDatabase:
             The index should fill axis until the last dimension, and the data should be a 1D array of shape (time_length,).
         '''
         with self.open_h5() as h5: # TODO: calculate the hilbert window and maxes. Look at preprocessed.
-            try: dset = h5['raw_data']['waveforms']
-            except KeyError as e: print(e, 'Run setup_raw_dataset first'); return
+            waveform_dset, hilbert_dset = self.get_check_group(h5, 'raw_data')
             
-            for idx, data in tqdm(idx_data, desc="Filling raw data", total=math.prod(self.shape[:-1])):
-                dset[idx] = data
+            for idx, data in tqdm(idx_data, desc="Filling raw data and hilbert", total=math.prod(self.shape[:-1])):
+                waveform_dset[idx] = data
+                hilbert_dset[idx] = self._hilbert(data)
     
     def write_preprocessed_data(self, **kwargs):
         """Hook to write preprocessed data to the HDF5 file. Calls setup and fill functions with specific indexer. This method should be implemented in the child class."""
@@ -880,20 +435,20 @@ class AcousticDatabase:
         return float(np.max(np.abs(waveform)))
 
     @staticmethod
-    def _hilbert_window(waveform): 
+    def _hilbert(waveform): 
         '''Calculate the hilbert envelope of a waveform.
         
         Parameters
         ----------
         waveform : np.ndarray
-            The input waveform. Should be 1D array of shape (time_length,).
+            The input waveform. Should be array of shape (...,time_length).
 
         Returns
         -------
-        float
+        np.ndarray
             The hilbert envelope of the waveform.
         '''
-        return np.abs(hilbert(waveform))
+        return hilbert(waveform)
 
     @staticmethod
     def _undo_gain(waveform, gain, offset): 
@@ -955,16 +510,17 @@ class AcousticDatabase:
         metadata = {}
         with self.open_h5() as h5:
             grp = h5.require_group('preprocessed_data')
-            dset = grp.require_dataset('waveforms', shape=self.shape, dtype='f4', track_order=True)
-            grp.require_dataset('hilbert', shape=self.shape, dtype='f4', track_order=True)
+            waveform_dset = grp.require_dataset('waveforms', shape=self.shape, dtype='f4', track_order=True)
+            hilbert_dset = grp.require_dataset('hilbert', shape=self.shape, dtype='c8', track_order=True)
             
             if apply_ungain: pass # TODO: later, get gain columns and indices/values from paramters collection mode
             if apply_filter: 
                 self.sos = self._build_filter_sos(lower_fs_coeff, upper_fs_coeff, filter_order) if apply_filter else None
                 metadata.update({"lower_fs_coeff": lower_fs_coeff, "upper_fs_coeff": upper_fs_coeff, "filter_order": filter_order})
             
-            dset.attrs.update(metadata)
-            dset.attrs['time_array'] = self.parameters['time_array']
+            waveform_dset.attrs.update(metadata)
+            waveform_dset.attrs['time_array'] = self.parameters['time_array']
+            hilbert_dset.attrs['time_array'] = self.parameters['time_array']
     
     def fill_preprocessed_data(self, idxs: Iterator[tuple]) -> None:   
         '''Fill a series of specific locations in the raw data dataset.
@@ -985,7 +541,7 @@ class AcousticDatabase:
                 except: continue
 
                 waveform_dset[*idx] = data
-                hilbert_dset[*idx] = self._hilbert_window(data)
+                hilbert_dset[*idx] = self._hilbert(data)
 
     def write_preprocessed_data(self):
         """Write preprocessed data to the HDF5 file. Calls setup and fill functions with specific indexer."""
@@ -1015,7 +571,7 @@ class AcousticDatabase:
         rollback = peak_distances-min(peak_distances)
         return rollback
     
-    def setup_first_break_aligned_data(self, from_group='preprocessed_data'):
+    def setup_first_break_aligned_data(self, from_group='preprocessed_data'): # TODO: raise error and handle in write function instead if no need to write
         '''
         Set up the group storing waveforms aligned by first breakfor the dataset.
         
@@ -1024,24 +580,27 @@ class AcousticDatabase:
         from_group : str
             The name of the group from which to read the waveforms to align.
         '''
-        if len(self.parameters['waveform_labels'])<2: print('Only one waveform. No need to align peaks'); return
+        if len(self.parameters['waveform_labels'])<2: print('Only one waveform. No need to align peaks'); return 
         if self.parameters['collectionDirection']['value'] != 'both': print('Collection mode is one direction. No need to align peaks'); return
         
         with self.open_h5() as h5:
             self.get_check_group(h5, from_group)
     
-            rollbacks = self._calculate_rollback(h5[from_group]['hilbert'][:])
+            rollbacks = self._calculate_rollback(np.abs(h5[from_group]['hilbert'][:]))
             max_ = rollbacks.max()
             grp = h5.require_group('first_break_aligned')
             
             new_shape = self.shape[:-1] + (self.shape[-1]-max_,)
             dset = grp.require_dataset('waveforms', shape=new_shape, dtype='f4', track_order=True)
-            grp.require_dataset('hilbert', shape=new_shape, dtype='f4', track_order=True)
-            
             dset.attrs['from_group'] = str(h5[from_group])
             dset.attrs['rollbacks'] = rollbacks
             dset.attrs['time_array'] = self.parameters['time_array'][:-max_]
-  
+            
+            hilbert = grp.require_dataset('hilbert', shape=new_shape, dtype='c8', track_order=True)
+            hilbert.attrs['from_group'] = str(h5[from_group])
+            hilbert.attrs['rollbacks'] = rollbacks
+            hilbert.attrs['time_array'] = self.parameters['time_array'][:-max_]
+
     def fill_first_break_aligned_data(self, idxs: Iterator[tuple], from_group='preprocessed_data') -> None:
         """Align the first break of the waveforms in the dataset and write to new dataset
 
@@ -1067,7 +626,7 @@ class AcousticDatabase:
     # -------------------------------------------------------------------------
     
     @staticmethod
-    def _tof_idx(hilbert, threshold_fraction=0.1):
+    def _tof_idx(hilbert, threshold_fraction=0.1, crop=None):
         '''
         Calculate the time of flight based on the hilbert envelope of the waveform and a threshold fraction of the max.
         
@@ -1083,10 +642,12 @@ class AcousticDatabase:
         np.ndarray
             The time of flight for each waveform.
         '''
+        if crop is not None: hilbert = hilbert[crop[0]:crop[1]]
+        hilbert = np.abs(hilbert)
         threshold_ = hilbert.max()*threshold_fraction
         return int(np.argmax(hilbert > threshold_))
       
-    def setup_tof_data(self, from_group='preprocessed_data', threshold_fraction=0.1):
+    def setup_tof_data(self, from_group='preprocessed_data', threshold_fraction=0.1, crop=None):
         '''
         Set up the group storing waveforms aligned by first breakfor the dataset.
         
@@ -1096,6 +657,8 @@ class AcousticDatabase:
             The name of the group from which to read the waveforms to align.
         threshold : float
             The fraction of the maximum value to use as the threshold for detecting the peak.
+        crop : tuple
+            The start and end indices for cropping the hilbert signal before calculating the time of flight.
         '''
         
         with self.open_h5() as h5:
@@ -1103,8 +666,9 @@ class AcousticDatabase:
             dset = h5[from_group].require_dataset('tof', shape=hilbert.shape[:-1], dtype='f4', track_order=True)
             dset.attrs['threshold_fraction'] = threshold_fraction
             dset.attrs['from_group'] = from_group
+            if crop: dset.attrs['crop'] = crop
             
-    def fill_tof_data(self, idxs: Iterator[tuple], from_group='preprocessed_data') -> None:
+    def fill_tof_data(self, idxs: Iterator[tuple], from_group='preprocessed_data', crop=None) -> None:
         """Align the first break of the waveforms in the dataset and write to new dataset
 
         Parameters
@@ -1121,7 +685,7 @@ class AcousticDatabase:
             tof_dset = h5[from_group]['tof']
             
             for idx in tqdm(idxs, desc="Calculating ToF", total=math.prod(self.shape[:-1])):
-                tof_idx = self._tof_idx(hilbert[*idx], threshold_fraction=threshold_fraction)
+                tof_idx = self._tof_idx(hilbert[*idx], threshold_fraction=threshold_fraction, crop=crop)
                 tof_dset[*idx] = time_array[tof_idx]
     
     def write_tof_data(self):
@@ -1146,6 +710,7 @@ class AcousticDatabase:
                 The amplitude of the hilbert envelope for each waveform.
             '''
             if crop is not None: hilbert = hilbert[crop[0]:crop[1]]
+            hilbert = np.abs(hilbert)
             return (hilbert.max())
              
     def setup_amplitude_data(self, from_group='preprocessed_data', crop=None):
@@ -1191,66 +756,6 @@ class AcousticDatabase:
     # Correlation Functions
     # -------------------------------------------------------------------------          
     
-    @staticmethod
-    def _autocorrelate(waveform, mode='full'): # TODO: Edge effects.
-            '''
-            Calculate the autocorrelation of the waveform.
-            
-            Parameters:
-            -----------
-            waveform: np.ndarray
-                The 1D waveform to calculate the autocorrelation of.
-
-            Returns:
-            --------
-            np.ndarray
-                The autocorrelation of the waveform.
-            '''
-            return correlate(waveform, waveform, mode=mode)
-             
-    def setup_autocorrelation_data(self, from_group='preprocessed_data', mode = 'full'):
-        '''
-        Set up the group storing waveforms aligned by first breakfor the dataset.
-        
-        Parameters
-        ----------
-        from_group : str
-            The name of the group from which to read the waveforms to align.
-        mode : str
-            The mode to use for the autocorrelation calculation.
-        crop : tuple
-            The start and end indices for cropping the hilbert signal before calculating the amplitude.
-        '''
-        with self.open_h5() as h5:
-            _,hilbert = self.get_check_group(h5, from_group)
-            auto_corr = h5[from_group].require_dataset('auto_corr', shape=hilbert.shape, dtype='f4', track_order=True)
-            auto_corr.attrs['from_group'] = from_group
-            auto_corr.attrs['mode'] = mode
-            
-    def fill_autocorrelation_data(self, idxs: Iterator[tuple], from_group='preprocessed_data', mode='full') -> None:
-        """Align the first break of the waveforms in the dataset and write to new dataset
-
-        Parameters
-        ----------
-        idxs : Iterator[tuple]
-            An iterator of tuples containing indices to span all but first and last axis.
-        from_group : str
-            The name of the group from which to read the waveforms to align.
-        mode : str
-            The mode to use for the autocorrelation calculation.
-        crop : tuple
-            The start and end indices for cropping the hilbert signal before calculating the amplitude.
-        """          
-        with self.open_h5() as h5:
-            waveforms = h5[from_group]['waveforms']
-            h5[from_group].require_dataset('auto_corr', shape=waveforms.shape, dtype='f4', track_order=True)
-            for idx in tqdm(idxs, desc= "Calculating Autocorrelation", total=math.prod(self.shape[:-1])):
-                h5[from_group]['auto_corr'][*idx] = self._autocorrelate(waveforms[*idx], mode=mode)
-    
-    def write_autocorrelation_data(self, mode):
-        """Write amplitude data to the HDF5 file. Calls setup and fill functions with specific indexer."""
-        raise NotImplementedError         
-               
     @staticmethod
     def _xcorr(waveform, mother_waveform, mode='same'):
             '''
@@ -1343,9 +848,12 @@ class AcousticDatabase:
         with self.open_h5() as h5:
             waveform, hilbert = self.get_check_group(h5, from_group)
             x_corr = h5[from_group].require_dataset('x_corr', shape=hilbert.shape, dtype='f4', track_order=True)
+            
+            lags = correlation_lags(waveform.shape[-1], mother_waveform.shape[-1], mode=mode)
             x_corr.attrs['mode'] = mode
             x_corr.attrs['mother_waveform'], x_corr.attrs['mother_time_array'] = self._interp_mother_waveform(waveform.attrs['time_array'], mother_waveform, mother_time_array)
             x_corr.attrs['mother_frequency'] = mother_frequency
+            x_corr.attrs['lags'] = lags
 
     def fill_xcorrelation_data(self, idxs: Iterator[tuple], from_group='preprocessed_data', mode='same') -> None:
         """Align the first break of the waveforms in the dataset and write to new dataset
@@ -1431,7 +939,7 @@ class AcousticDatabase:
             from_waveform, _ = self.get_check_group(h5, from_group)
             dset = h5[from_group].require_dataset('fft_data', shape=from_waveform.shape[:-1] + (from_waveform.shape[-1]//2+1,), dtype='c8', track_order=True)
             
-            dset.attrs['frequencies'] = np.fft.rfftfreq(from_waveform.shape[-1], d=self.parameters['dt']['value'])
+            dset.attrs['freq_array'] = np.fft.rfftfreq(from_waveform.shape[-1], d=self.parameters['dt']['value'])
             dset.attrs['window'] = window.__name__ if window is not None else None
             
     def fill_fft_data(self, idxs: Iterator[tuple], from_group='preprocessed_data', window=np.hanning) -> None:
@@ -1449,13 +957,17 @@ class AcousticDatabase:
             from_waveform, _ = self.get_check_group(h5, from_group)
             fft_dset = h5[from_group]['fft_data']
 
-            if self.window is not None:
-                window = self.window(from_waveform.shape[-1])
+            if window is not None:
+                window = window(from_waveform.shape[-1])
                 for idx in tqdm(idxs, desc="Computing FFT", total=math.prod(self.shape[:-1])):
                     fft_dset[*idx] = self._fft(window * from_waveform[*idx])
             else:
                 for idx in tqdm(idxs, desc="Computing FFT", total=math.prod(self.shape[:-1])):
                     fft_dset[*idx] = self._fft(from_waveform[*idx])
+         
+    def write_fft_data(self, from_group='preprocessed_data', window=np.hanning):
+        """Write FFT data to the HDF5 file. Calls setup and fill functions with specific indexer."""
+        raise NotImplementedError
                 
     def get_fft_data(self, idx, h5, from_group='preprocessed_data'):
         '''Get the values as the full spectrum, not just real portion
@@ -1489,25 +1001,97 @@ class AcousticDatabase:
             The FFT data for the given index.
         '''
         try: 
-            return np.stack( [ h5[from_group]['fft_data'].attrs['frequencies'][...,::-1], h5[from_group]['fft_data']['calculations'][*idx].attrs['frequencies'] ] )
+            return np.stack( [ h5[from_group]['fft_data'].attrs['freq_array'][...,::-1], h5[from_group]['fft_data']['calculations'][*idx].attrs['freq_array'] ] )
         except KeyError as e: 
             print(e, 'Run setup_fft_data first'); return None
 
     # -------------------------------------------------------------------------
-    # Wavelet Analysis
+    # Time-frequency
     # -------------------------------------------------------------------------          
     
     # Complex Morlet CWT - Time-dependent amplitude and phase changes
+    def morlet_fwhm_info(self, wavelet_name, transducer_frequency):
+        """FWHM of a PyWavelets complex Morlet ('cmorB-C') scaled to transducer_frequency.
+        Prints and returns widths of the amplitude envelope (not power).
+        """
+        B, C = map(float, wavelet_name.removeprefix('cmor').split('-'))
+        time_fwhm = 2 * np.sqrt(B * np.log(2)) * C / transducer_frequency
+        print(wavelet_name, f"at {transducer_frequency:.2f} MHz, width at fwhm: {time_fwhm * 1e6:.2f} us")
+
+    def check_wavelet_parameters(self, wavelet_name, n_scales, sampling_period, samples):
+        transducer_frequency = self.parameters['transducerFrequency']['value']*1e6
+        freqs_of_interest = np.geomspace(transducer_frequency/5, transducer_frequency*10, num=n_scales) #  in Hz
+        scales = pywt.central_frequency( wavelet_name)/ sampling_period/ freqs_of_interest # scale = f_c * fs / f_target
+        
+        self.morlet_fwhm_info(wavelet_name, freqs_of_interest[0])
+        self.morlet_fwhm_info(wavelet_name, transducer_frequency)
+        self.morlet_fwhm_info(wavelet_name, freqs_of_interest[-1])
+        period_samples = scales / pywt.central_frequency(wavelet_name) # wavelet period in samples
+        print('Periods in record (lowest f, highest f):', samples/period_samples.max(), samples/period_samples.min())
+        
+        prompt = "Are you satisfied with these parameters? (y - proceed with calculation / n - exit): "
+        answer = input(prompt).strip().lower()
+        if answer == 'y': return scales, freqs_of_interest
+        print("Parameters rejected, exiting.")
+        sys.exit(0)
     
-    # Cross-wavelet transform - Common frequency content and relative phase between reference and measurement
+    def setup_cwt_data(self, from_group='preprocessed_data', wavelet_name='cmor0.5-1.0', n_scales=100, **kwargs):
+        '''
+        Set up the group storing waveforms aligned by first breakfor the dataset.
+        
+        Parameters
+        ----------
+        from_group : str
+            The name of the group from which to read the waveforms to align.
+        wavelet : str
+            The pywt wavelet to use for the continuous wavelet transform.
+        '''
+        sampling_period = self.parameters['dt']['value']
+        with self.open_h5() as h5:
+            waveform, _ = self.get_check_group(h5, from_group)
+            scales, freqs_of_interest = self.check_wavelet_parameters(wavelet_name, n_scales, sampling_period, waveform.shape[-1])
+            cwt_dset = h5[from_group].require_dataset('cwt', shape=waveform.shape[:-1]+(n_scales, waveform.shape[-1]), dtype='c8', track_order=True)
+
+            cwt_dset.attrs['wavelet_name'] = wavelet_name
+            cwt_dset.attrs['freqs_of_interest'] = freqs_of_interest
+            cwt_dset.attrs['scales'] = scales
+
+    def fill_cwt_data(self, idxs: Iterator[tuple], from_group='preprocessed_data') -> None:
+        """Align the first break of the waveforms in the dataset and write to new dataset
+
+        Parameters
+        ----------
+        idxs : Iterator[tuple]
+            An iterator of tuples containing indices to span all but first and last axis.
+        from_group : str
+            The name of the group from which to read the waveforms to align.
+        mode : str
+            The mode to use for the cross-correlation calculation.
+        crop : tuple
+            The start and end indices for cropping the hilbert signal before calculating the amplitude.
+        """          
+        with self.open_h5() as h5:
+            waveforms = h5[from_group]['waveforms']
+            cwt_dset =  h5[from_group]['cwt']
+            scales = cwt_dset.attrs['scales']
+            wavelet = cwt_dset.attrs['wavelet_name']
+            sampling_period = self.parameters['dt']['value']
+
+            for idx in tqdm(idxs, desc= "Calculating CWT", total=math.prod(self.shape[:-1])):
+               cwt_dset[*idx],_ = pywt.cwt(waveforms[*idx], scales, wavelet, sampling_period=sampling_period, method='fft')
     
-    # Wavelet coherence - Frequency-dependent correlation between signal
-            
+    def write_cwt_data(self):
+            """Write amplitude data to the HDF5 file. Calls setup and fill functions with specific indexer."""
+            raise NotImplementedError         
+    
+    # Cross-wavelet transform,  Wavelet coherence?
+    
+    
     # -------------------------------------------------------------------------
     # basic viz
     # -------------------------------------------------------------------------
 
-    def view_fft_plots(self, idx, crop=None, from_group='preprocessed'): #TODO: check
+    def view_fft_plots(self, idx, crop=None, from_group='preprocessed', unwrap=False): #TODO: check
         plt.clf()
         fig, ax = plt.subplots(2, 2, figsize=(8, 6))
         ax = ax.flatten()
@@ -1518,12 +1102,13 @@ class AcousticDatabase:
             time_array = h5[from_group]['waveforms'].attrs['time_array']
 
             fft_data = h5[from_group]['fft_data'][:,*idx]
-            freq = h5[from_group]['fft_data'].attrs['frequencies']/1e6
+            freq = h5[from_group]['fft_data'].attrs['freq_array']/1e6
             
             for i, dat in enumerate(fft_data):
                 
                 magnitude = self._abs(dat)/len(dat)*2
                 phase = self._angle(dat)
+                if unwrap: phase = np.unwrap(phase)
                 group_delay = self._group_delay(phase, freq)
                 
                 ax[0].plot(time_array/1e3, data[i])
@@ -1549,23 +1134,41 @@ class AcousticDatabase:
         fig.tight_layout()
         plt.show()
 
-    def view_waveform(self, idx):
+    def view_waveform(self, idx, from_group='preprocessed_data', from_dset='waveforms'):    
         fig, ax = plt.subplots()
         with self.open_h5() as h5:
-            data = h5['raw_data']['waveforms']
-            ax.plot(data.attrs['time_array'], data[idx])
+            data = h5[from_group][from_dset]
+            ax.plot(data.attrs['time_array'], data[:,*idx])
         fig.show()
        
-    def view_mother_waveform(self, from_group='preprocessed_data'):
+    def view_mother_waveform(self, from_group='preprocessed_data', from_dset='x_corr'):
         fig, ax = plt.subplots(figsize=(4,3))
         with self.open_h5() as h5:
-            mother_waveform = h5[from_group]['x_corr'].attrs['mother_waveform']
-            mother_time_array = h5[from_group]['x_corr'].attrs['mother_time_array']
-            mother_frequency = h5[from_group]['x_corr'].attrs['mother_frequency']
+            mother_waveform = h5[from_group][from_dset].attrs['mother_waveform']
+            mother_time_array = h5[from_group][from_dset].attrs['mother_time_array']
+            mother_frequency = h5[from_group][from_dset].attrs['mother_frequency']
             ax.plot(mother_time_array, mother_waveform)
             ax.set(xlabel='Time (ns)', ylabel='Voltage (mV)', title=f'Mother Waveform, {mother_frequency} MHz');
         fig.show()
 
+    def view_continuous_wavelet(self, idx, from_group='preprocessed_data', from_dset='cwt'): # TODO: check
+        fig, ax = plt.subplots(len(self.waveform_labels), figsize=(4,3))
+        with self.open_h5() as h5:
+            dset = h5[from_group][from_dset][:,*idx]
+            wavelet = pywt.ContinuousWavelet(dset['attrs']['wavelet'])
+            psi, x = wavelet.wavefun(precision=10)   # precision sets sample count (2**precision points)
+
+            fig, ax = plt.subplots( figsize=(8, 6))
+            for i, dat in dset:
+                ax.imshow(dat)
+                ax.imshow()
+                ax.axvline(wavelet.center_frequency, color='r', ls=':', label='center freq')
+                ax.set_xlabel('frequency (cycles per wavelet unit)')
+                ax.set_xlim(-3, 3)
+                ax.legend()
+
+        plt.tight_layout()
+        plt.show()
 
 # Naming convention:  Acoustic<ExperimentType>Database 
 # -- Specific to the type of experiment and how the data is collected. They define how to index the data and how to convert from SQLite to HDF5.
@@ -1691,10 +1294,10 @@ class AcousticScanDatabase(AcousticDatabase):
     # basic analysis
     # -------------------------------------------------------------------------
     
-    def write_tof_data(self, from_group='preprocessed_data', threshold_fraction=0.1):
+    def write_tof_data(self, from_group='preprocessed_data', threshold_fraction=0.1, crop=None):
         """Write time of flight data to the HDF5 file. Calls setup and fill functions with specific indexer."""
-        self.setup_tof_data(from_group=from_group, threshold_fraction=threshold_fraction)
-        self.fill_tof_data(self.w_x_z_generator(), from_group=from_group)
+        self.setup_tof_data(from_group=from_group, threshold_fraction=threshold_fraction, crop=crop)
+        self.fill_tof_data(self.w_x_z_generator(), from_group=from_group, crop=crop)
         print('\tFinished')
         
     def write_amplitude_data(self, from_group='preprocessed_data', crop=None):
@@ -1702,28 +1305,50 @@ class AcousticScanDatabase(AcousticDatabase):
         self.setup_amplitude_data(from_group, crop)
         self.fill_amplitude_data(self.w_x_z_generator(), from_group, crop)
         print('\tFinished')    
+           
+    # -------------------------------------------------------------------------
+    # FFT
+    # -------------------------------------------------------------------------
+    
+    def write_fft_data(self, from_group, window=np.hanning, **kwargs): 
+        '''Write preprocessed data to the HDF5 file.
+
+        Parameters
+        ----------
+        **kwargs
+            Parameters passed to :meth:`setup_preprocessed_data`. See that
+            method for the available preprocessing options.
+        '''
+        self.setup_fft_data(from_group=from_group, **kwargs)
+        self.fill_fft_data(self.w_x_z_generator(), from_group = from_group,**kwargs )
+        print('\tFinished')
     
     # -------------------------------------------------------------------------
-    # basic analysis
+    # correlation functions
     # -------------------------------------------------------------------------
     
-    def write_autocorrelation_data(self, from_group='preprocessed_data', mode='full'):
-        """Write autocorrelation data to the HDF5 file. Calls setup and fill functions with specific indexer."""
-        self.setup_autocorrelation_data(from_group, mode)
-        self.fill_autocorrelation_data(self.w_x_z_generator(), from_group, mode)
-        print('\tFinished')  
-        
     def write_xcorrelation_data(self, mother_db_path: str, from_group='preprocessed_data', mode='same'):
         """Write cross-correlation data to the HDF5 file. Calls setup and fill functions with specific indexer."""
         self.setup_xcorrelation_data(mother_db_path, from_group, mode)
         self.fill_xcorrelation_data(self.w_x_z_generator(), from_group, mode)
         print('\tFinished')  
-   
+
+    # -------------------------------------------------------------------------
+    # Time-frequency 
+    # -------------------------------------------------------------------------
+
+    def write_cwt_data(self, from_group='preprocessed_data', wavelet_name='cmor0.5-1.0', n_scales=100,):
+        """Write cross-correlation data to the HDF5 file. Calls setup and fill functions with specific indexer."""
+        self.setup_cwt_data(from_group, wavelet_name, n_scales)
+        self.fill_cwt_data(self.w_x_z_generator(), from_group,)
+        print('\tFinished')  
+
+
     # -------------------------------------------------------------------------
     # basic viz
     # -------------------------------------------------------------------------
 
-    def view_img_plot(self, idx, from_group = 'preprocessed_data', from_dataset = 'waveforms'): #TODO: check
+    def view_img_plot(self, idx, from_group = 'preprocessed_data', from_dataset = 'waveforms'): 
         '''View the image plot for a specific index.
 
         Parameters
@@ -1737,9 +1362,9 @@ class AcousticScanDatabase(AcousticDatabase):
         ax = ax.flatten()
         with self.open_h5() as h5:
             data = h5[from_group][from_dataset]
-            time_array = h5[from_group]['waveforms'].attrs['time_array']/1e3
+            time_array = h5[from_group][from_dataset].attrs['time_array']/1e3
             for i, dat in enumerate(data):
-                a = ax[i].imshow(abs(dat[...,idx[-1]]).T,)
+                a = ax[i].imshow(dat[...,idx[-1]].T,)
                 plt.colorbar(a, ax=ax[i], label='Ampl. (mV)')
                 ax[i].set_title(self.parameters['waveform_labels'][i])
                 ax[i].plot(idx[0], idx[1], 'ro', markersize=5)
@@ -1753,7 +1378,7 @@ class AcousticScanDatabase(AcousticDatabase):
         fig.tight_layout()
         fig.show()
 
-    def amplitude_tof_plot(self, idx=None, from_group='preprocessed_data'): #TODO: check
+    def view_instantaneous_amplitude_img_plot(self, idx, from_group = 'preprocessed_data'): 
         '''View the image plot for a specific index.
 
         Parameters
@@ -1763,51 +1388,280 @@ class AcousticScanDatabase(AcousticDatabase):
         from_group : str, optional
             The group in the HDF5 file from which to retrieve the data.
         '''
-        fig, ax = plt.subplots(self.shape[0], 2, figsize=(self.shape[0]*4, 3))
+        fig, ax = plt.subplots(1+self.shape[0], 1, figsize=(6, 2*(1+self.shape[0])))
+        ax = ax.flatten()
         with self.open_h5() as h5:
-            tof =  h5[from_group]['tof']
-            amplitude =  h5[from_group]['amplitude']
-            for i, (tof, amp) in enumerate(zip(tof, amplitude)):
-                a = ax[i,0].imshow(1e-3*tof.T,)
-                plt.colorbar(a, ax=ax[i,0], label='ToF (us)')
-                ax[i,0].set_title(self.parameters['waveform_labels'][i])
+            data = h5[from_group]['hilbert']
+            time_array = h5[from_group]['hilbert'].attrs['time_array']/1e3
+            for i, dat in enumerate(data):
+                a = ax[i].imshow(abs(dat[...,idx[-1]]).T,)
+                plt.colorbar(a, ax=ax[i], label='Ampl. (au)')
+                ax[i].set_title(self.parameters['waveform_labels'][i])
+                ax[i].plot(idx[0], idx[1], 'ro', markersize=5)
                 
-                a = ax[i,1].imshow(amp.T,)
-                plt.colorbar(a, ax=ax[i,1], label='Ampl. (mV)')
-                ax[i,1].set_title(self.parameters['waveform_labels'][i])
-            
-            if idx is not None:
-                for a in ax.flatten():
-                    a.plot(idx[0], idx[1], 'ro', markersize=5)
-            
-        fig.suptitle('Tof and hilbert envelope amplitude of {}'.format(from_group))
+                ax[-1].plot(time_array, abs(dat[*idx[:-1]]), label=self.parameters['waveform_labels'][i])
+                ax[-1].axvline(x=time_array[idx[-1]], color='r', linestyle='--', linewidth=1)
+                ax[-1].set_xlabel('Time (us)')
+                ax[-1].set_ylabel('Ampl. (au)')
+            ax[-1].legend(loc='upper center', bbox_to_anchor=(0.5, -0.5), ncol=2, borderaxespad=0.)
+        fig.suptitle('t=({} us), x,z=({},{} mm), inst. magnitude from {}'.format(time_array[idx[-1]], idx[0], idx[1], from_group))
         fig.tight_layout()
         fig.show()
     
-     
-class AcousticScanDatabaseFFT(AcousticDatabaseFFT, AcousticScanDatabase):
-    """Acoustics database subclass for 2D scan experiments (collection_index <-> X,Z coordinates) with FFT preprocessing."""
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        
-    # -------------------------------------------------------------------------
-    # FFT
-    # -------------------------------------------------------------------------
-    
-    def write_fft_data(self, from_group, **kwargs): 
-        '''Write preprocessed data to the HDF5 file.
+    def view_instantaneous_phase_img_plot(self, idx, from_group = 'preprocessed_data', unwrap=False):
+        '''View the image plot for a specific index.
 
         Parameters
         ----------
-        **kwargs
-            Parameters passed to :meth:`setup_preprocessed_data`. See that
-            method for the available preprocessing options.
+        idx : int
+            The index of the data to view. Excludes the waveform axis, so it should be a tuple of (x_index, z_index, y_index).
+        from_group : str, optional
+            The group in the HDF5 file from which to retrieve the data.
+        unwrap : bool, optional
+            Whether to unwrap the phase data.
         '''
-        self.setup_fft_data(from_group=from_group, **kwargs)
-        self.fill_fft_data(self.w_x_z_generator(), from_group = from_group,**kwargs )
-        print('\tFinished')
+        cmap = 'viridis' if unwrap else 'twilight'
+        fig, ax = plt.subplots(1+self.shape[0], 1, figsize=(6, 2*(1+self.shape[0])))
+        ax = ax.flatten()
+        with self.open_h5() as h5:
+            data = h5[from_group]['hilbert']
+            time_array = h5[from_group]['hilbert'].attrs['time_array']/1e3
+            for i, dat in enumerate(data):
+                if unwrap: phase_data = np.unwrap(np.angle(dat), axis=-1)
+                else: phase_data = np.angle(dat)
 
+                a = ax[i].imshow(phase_data[...,idx[-1]].T, cmap=cmap)
+                plt.colorbar(a, ax=ax[i], label='Phase (rad)')
+                ax[i].set_title(self.parameters['waveform_labels'][i])
+                ax[i].plot(idx[0], idx[1], 'ro', markersize=5)
+                
+                ax[-1].plot(time_array, phase_data[*idx[:-1]], label=self.parameters['waveform_labels'][i])
+                ax[-1].axvline(x=time_array[idx[-1]], color='r', linestyle='--', linewidth=1)
+                ax[-1].set_xlabel('Time (us)')
+                ax[-1].set_ylabel('Phase (rad)')
+            ax[-1].legend(loc='upper center', bbox_to_anchor=(0.5, -0.5), ncol=2, borderaxespad=0.)
+        fig.suptitle('t=({} us), x,z=({},{} mm), inst. phase from {}'.format(time_array[idx[-1]], idx[0], idx[1], from_group))
+        fig.tight_layout()
+        fig.show()
+    
+    def view_instantaneous_frequency_img_plot(self, idx, from_group = 'preprocessed_data'): #TODO: check
+        '''View the image plot for instantanoues freuqency of specific index. Works with analytic signal
 
+        Parameters
+        ----------
+        idx : int
+            The index of the data to view. Excludes the waveform axis, so it should be a tuple of (x_index, z_index, y_index).
+        from_group : str, optional
+            The group in the HDF5 file from which to retrieve the data.
+        '''
+        fig, ax = plt.subplots(1+self.shape[0], 1, figsize=(6, 2*(1+self.shape[0])))
+        ax = ax.flatten()
+        with self.open_h5() as h5:
+            data = h5[from_group]['hilbert']
+            time_array = h5[from_group]['hilbert'].attrs['time_array']/1e3
+            for i, dat in enumerate(data):
+                phase_data = np.unwrap(np.angle(dat), axis=-1)
+                inst_freq_data = np.gradient(phase_data, 2*np.pi*time_array, axis=-1)
+                
+                a = ax[i].imshow(inst_freq_data[...,idx[-1]].T,)
+                plt.colorbar(a, ax=ax[i], label='Inst. Freq. (MHz)')
+                ax[i].set_title(self.parameters['waveform_labels'][i])
+                ax[i].plot(idx[0], idx[1], 'ro', markersize=5)
+                
+                ax[-1].plot(time_array, inst_freq_data[*idx[:-1]], label=self.parameters['waveform_labels'][i])
+                ax[-1].axvline(x=time_array[idx[-1]], color='r', linestyle='--', linewidth=1)
+                ax[-1].set_xlabel('Time (us)')
+                ax[-1].set_ylabel('Inst. Freq. (MHz)')
+            ax[-1].legend(loc='upper center', bbox_to_anchor=(0.5, -0.5), ncol=2, borderaxespad=0.)
+        fig.suptitle('t=({} us), x,z=({},{} mm), inst. freq. from'.format(time_array[idx[-1]], idx[0], idx[1], from_group))
+        fig.tight_layout()
+        fig.show()
+
+    def img_tof(self, idx=None, from_group='preprocessed_data'): #TODO: check
+        '''View the image plot for a specific index.
+
+        Parameters
+        ----------
+        idx : int
+            The index of the data to view. Excludes the waveform axis, so it should be a tuple of (x_index, z_index, y_index).
+        from_group : str, optional
+            The group in the HDF5 file from which to retrieve the data.
+        '''
+        fig, ax = plt.subplots(self.shape[0], figsize=(self.shape[0]*2, 3))
+        with self.open_h5() as h5:
+            for i, tof in enumerate(h5[from_group]['tof']):
+                a = ax[i].imshow(1e-3*tof.T,)
+                plt.colorbar(a, ax=ax[i], label='ToF (us)')
+                if idx is not None:
+                    ax[i].plot(idx[0], idx[1], 'ro', markersize=5)
+                    ax[i].set_title(self.parameters['waveform_labels'][i]+' {:.2f}'.format(tof[*idx]*1e-3)+' us')
+                else: ax[i].set_title(self.parameters['waveform_labels'][i])
+            
+        fig.suptitle('ToF of {}{}'.format(from_group, f', x,z=({idx[0]},{idx[1]})' if idx is not None else ''))
+        fig.tight_layout()
+        fig.show()
+        
+    def img_amplitude(self, idx=None, from_group='preprocessed_data'): #TODO: check
+        '''View the image plot for a specific index.
+
+        Parameters
+        ----------
+        idx : int
+            The index of the data to view. Excludes the waveform axis, so it should be a tuple of (x_index, z_index, y_index).
+        from_group : str, optional
+            The group in the HDF5 file from which to retrieve the data.
+        '''
+        fig, ax = plt.subplots(self.shape[0], figsize=(self.shape[0]*2, 3))
+        with self.open_h5() as h5:
+            for i, amplitude in enumerate(h5[from_group]['amplitude']):
+                a = ax[i].imshow(1e-3*amplitude.T,)
+                plt.colorbar(a, ax=ax[i], label='Amplitude (a.u.)')
+                if idx is not None:
+                    ax[i].plot(idx[0], idx[1], 'ro', markersize=5)
+                    ax[i].set_title(self.parameters['waveform_labels'][i]+' {:.2f}'.format(amplitude[*idx]*1e-3)+' a.u.')
+                else: ax[i].set_title(self.parameters['waveform_labels'][i])
+            
+        fig.suptitle('Amplitude of {}{}'.format(from_group, f', x,z=({idx[0]},{idx[1]})' if idx is not None else ''))
+        fig.tight_layout()
+        fig.show()
+
+    def view_fft_amplitude_img_plot(self, idx, crop=None, from_group = 'preprocessed_data'): 
+        '''View the image plot for a specific index.
+
+        Parameters
+        ----------
+        idx : int
+            The index of the data to view. Excludes the waveform axis, so it should be a tuple of (x_index, z_index, y_index).
+        crop : tuple, optional
+            The crop bounds for the FFT data.
+        from_group : str, optional
+            The group in the HDF5 file from which to retrieve the data.
+        '''
+        fig, ax = plt.subplots(1+self.shape[0], 1, figsize=(6, 2*(1+self.shape[0])))
+        ax = ax.flatten()
+        
+        with self.open_h5() as h5:
+            fft_data = h5[from_group]['fft_data'][...,crop[0]:crop[1]] if crop is not None else h5[from_group]['fft_data']
+            freq_array = h5[from_group]['fft_data'].attrs['freq_array']/1e6
+            
+            for i, dat in enumerate(fft_data):
+                mag = self._abs(dat)/len(dat)*2
+                a = ax[i].imshow(mag[...,idx[-1]].T,)
+                plt.colorbar(a, ax=ax[i], label='Ampl. (au)')
+                ax[i].set_title(self.parameters['waveform_labels'][i])
+                ax[i].plot(idx[0], idx[1], 'ro', markersize=5)
+
+                ax[-1].plot(freq_array[crop[0]:crop[1]], mag[*idx[:-1]], label=self.parameters['waveform_labels'][i])
+                ax[-1].axvline(x=freq_array[idx[-1]], color='r', linestyle='--', linewidth=1)
+                ax[-1].set_xlabel('Frequency (MHz)')
+                ax[-1].set_ylabel('Ampl. (au)')
+                
+            ax[-1].legend(loc='upper center', bbox_to_anchor=(0.5, -0.5), ncol=2, borderaxespad=0.)
+        fig.suptitle('f=({:<.2f} MHz), x,z=({},{} mm), fft magnitude from {}'.format(freq_array[idx[-1]], idx[0], idx[1], from_group))
+        fig.tight_layout()
+        fig.show()
+    
+    def view_fft_phase_img_plot(self, idx, from_group = 'preprocessed_data', crop=None, unwrap=False):
+        '''View the image plot for a specific index.
+
+        Parameters
+        ----------
+        idx : int
+            The index of the data to view. Excludes the waveform axis, so it should be a tuple of (x_index, z_index, y_index).
+        from_group : str, optional
+            The group in the HDF5 file from which to retrieve the data.
+        unwrap : bool, optional
+            Whether to unwrap the phase data.
+        '''
+        crop = [0, len(self.get_fft_frequencies(idx, self.open_h5(), from_group=from_group)[0])] if crop is None else crop
+        cmap = 'viridis' if unwrap else 'twilight'
+        fig, ax = plt.subplots(1+self.shape[0], 1, figsize=(6, 2*(1+self.shape[0])))
+        ax = ax.flatten()
+        with self.open_h5() as h5:
+            data = h5[from_group]['fft_data']
+            freq_array = h5[from_group]['fft_data'].attrs['freq_array']/1e6
+            for i, dat in enumerate(data):
+                if unwrap: phase_data = np.unwrap(np.angle(dat), axis=-1)[...,crop[0]:crop[1]]
+                else: phase_data = np.angle(dat)[...,crop[0]:crop[1]]
+                
+                a = ax[i].imshow(phase_data[...,idx[-1]].T, cmap=cmap)
+                plt.colorbar(a, ax=ax[i], label='Phase (rad)')
+                ax[i].set_title(self.parameters['waveform_labels'][i])
+                ax[i].plot(idx[0], idx[1], 'ro', markersize=5)
+                
+                ax[-1].plot(freq_array[crop[0]:crop[1]], phase_data[*idx[:-1]], label=self.parameters['waveform_labels'][i])
+                ax[-1].axvline(x=freq_array[idx[-1]], color='r', linestyle='--', linewidth=1)
+                ax[-1].set_xlabel('Frequency (MHz)')
+                ax[-1].set_ylabel('Phase (rad)')
+            ax[-1].legend(loc='upper center', bbox_to_anchor=(0.5, -0.5), ncol=2, borderaxespad=0.)
+        fig.suptitle('f=({:.2f} MHz), x,z=({},{} mm), inst. phase from {}'.format(freq_array[idx[-1]], idx[0], idx[1], from_group))
+        fig.tight_layout()
+        fig.show()
+    
+    def view_fft_gdelay_img_plot(self, idx, from_group = 'preprocessed_data', crop=None): #TODO: check
+        '''View the image plot for instantanoues freuqency of specific index. Works with analytic signal
+
+        Parameters
+        ----------
+        idx : int
+            The index of the data to view. Excludes the waveform axis, so it should be a tuple of (x_index, z_index, y_index).
+        from_group : str, optional
+            The group in the HDF5 file from which to retrieve the data.
+        '''
+        crop = [0, len(self.get_fft_frequencies(idx, self.open_h5(), from_group=from_group)[0])] if crop is None else crop
+        fig, ax = plt.subplots(1+self.shape[0], 1, figsize=(6, 2*(1+self.shape[0])))
+        ax = ax.flatten()
+        with self.open_h5() as h5:
+            data = h5[from_group]['fft_data']
+            freq_array = h5[from_group]['fft_data'].attrs['freq_array']/1e6
+            for i, dat in enumerate(data):
+                phase_data = np.unwrap(np.angle(dat), axis=-1)
+                gdelay_data = np.gradient(phase_data, 2*np.pi*freq_array, axis=-1)[...,crop[0]:crop[1]]
+                
+                a = ax[i].imshow(gdelay_data[...,idx[-1]].T,)
+                plt.colorbar(a, ax=ax[i], label='Group Delay (us)')
+                ax[i].set_title(self.parameters['waveform_labels'][i])
+                ax[i].plot(idx[0], idx[1], 'ro', markersize=5)
+                
+                ax[-1].plot(freq_array[crop[0]:crop[1]], gdelay_data[*idx[:-1]], label=self.parameters['waveform_labels'][i])
+                ax[-1].axvline(x=freq_array[idx[-1]], color='r', linestyle='--', linewidth=1)
+                ax[-1].set_xlabel('Frequency (MHz)')
+                ax[-1].set_ylabel('Group Delay (us)')
+            ax[-1].legend(loc='upper center', bbox_to_anchor=(0.5, -0.5), ncol=2, borderaxespad=0.)
+        fig.suptitle('f=({:<.2f} MHz), x,z=({},{} mm), group delay from {}'.format(freq_array[idx[-1]], idx[0], idx[1], from_group))
+        fig.tight_layout()
+        fig.show()
+
+    def view_img_correlation(self, idx=None, from_group='first_break_aligned', from_dataset='x_corr'):
+        '''View the image plot for a specific index.
+    
+        Parameters
+        ----------
+        idx : int
+            The index of the data to view. Excludes the waveform axis, so it should be a tuple of (x_index, z_index, y_index).
+        from_group : str, optional
+            The group in the HDF5 file from which to retrieve the data.
+        '''
+        fig, ax = plt.subplots(1+self.shape[0], 1, figsize=(6, 2*(1+self.shape[0])))
+        ax = ax.flatten()
+        with self.open_h5() as h5:
+            data = h5[from_group][from_dataset]
+            time_lag = h5[from_group][from_dataset].attrs['lags']/1e3
+            for i, dat in enumerate(data):
+                a = ax[i].imshow(dat[...,idx[-1]].T,)
+                plt.colorbar(a, ax=ax[i], label='Ampl. (mV)')
+                ax[i].set_title(self.parameters['waveform_labels'][i])
+                ax[i].plot(idx[0], idx[1], 'ro', markersize=5)
+                
+                ax[-1].plot(time_lag, dat[*idx[:-1]], label=self.parameters['waveform_labels'][i])
+                ax[-1].axvline(x=time_lag[idx[-1]], color='r', linestyle='--', linewidth=1)
+                ax[-1].set_xlabel('Time lag (us)')
+                ax[-1].set_ylabel('Ampl. (mV)')
+            ax[-1].legend(loc='upper center', bbox_to_anchor=(0.5, -0.5), ncol=2, borderaxespad=0.)
+        fig.suptitle('t=({} us), x,z=({},{} mm), {} from {}'.format(time_lag[idx[-1]], idx[0], idx[1], from_dataset, from_group))
+        fig.tight_layout()
+        fig.show()
+ 
       
 # # TODO
 # class AcousticsSweepDatabase(AcousticDatabase):
